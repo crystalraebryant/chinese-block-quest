@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chinese Block Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jersey+15&family=Nunito:wght@600;700;800&family=Noto+Sans+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout: sky + grass header, player stats bar, three GUI tabs, stone-grey panels on a dirt background */
+  --panel: #c6c6c6;
+  --ink: #1e1e1e;
+  --muted: #3f3f3f;
+  --grass: #5d9b2f;
+  --grass-dk: #3f6f1d;
+  --red: #b3261e;
+  --gold: #ffde3b;
+  --t1: #d42a20; --t2: #c98a00; --t3: #1f8f3a; --t4: #2549b8; --t0: #6b6b6b;
+  --display: "Jersey 15", "Arial Black", system-ui, sans-serif;
+  --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --han: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background-color: #6b4a2f; background-image: var(--dirt); background-size: 64px 64px; image-rendering: pixelated;
+  color: var(--ink); font-family: var(--body); font-weight: 600; font-size: 17px; line-height: 1.45; }
+button, select, textarea { font: inherit; }
+button, select { cursor: pointer; }
+button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.bevel { background: var(--panel); border: 3px solid #000; box-shadow: inset 3px 3px 0 #fff, inset -3px -3px 0 #555; }
+header { background: #78b7ea; }
+.hwrap { max-width: 820px; margin: 0 auto; padding: 18px 16px 10px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: 2.6rem; line-height: 1; color: #fff; margin: 0; text-shadow: 3px 3px 0 #2b2b2b; text-wrap: balance; letter-spacing: .02em; }
+h1 .han { font-family: var(--han); font-size: 1.4rem; margin-left: 8px; }
+.grassrow { height: 32px; background-color: var(--grass); background-image: var(--grassTex); background-size: 32px 32px; border-top: 3px solid #000; border-bottom: 3px solid #000; }
+.wrap { max-width: 820px; margin: 0 auto; padding: 0 16px; }
+
+.player { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 14px 0 10px; color: #fff; font-family: var(--display); text-shadow: 2px 2px 0 #000; }
+.ava { width: 52px; height: 52px; font-size: 34px; display: grid; place-items: center; background: #8b8b8b; border: 3px solid #000; box-shadow: inset 3px 3px 0 #373737, inset -3px -3px 0 #fff; text-shadow: none; }
+.lv { font-size: 1.8rem; color: #7fe03a; }
+.xpwrap { flex: 1; min-width: 180px; display: grid; gap: 2px; }
+.xpbar { height: 18px; background: #222; border: 3px solid #000; display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; padding: 2px; }
+.xpbar i { background: #3a3a3a; }
+.xpbar i.on { background: #7fe03a; box-shadow: inset 0 -3px 0 #4e9a1f; }
+.xptext { font-family: var(--body); font-size: .85rem; font-weight: 800; text-shadow: 1px 1px 0 #000; font-variant-numeric: tabular-nums; }
+.stat { font-size: 1.7rem; display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.gem { width: 24px; height: 24px; image-rendering: pixelated; }
+
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.tab { font-family: var(--display); font-size: 1.45rem; padding: 6px 14px; color: var(--ink); }
+.tab[aria-selected="true"] { background: var(--grass); color: #fff; text-shadow: 2px 2px 0 #1d3a0b; box-shadow: inset 3px 3px 0 #8fd25a, inset -3px -3px 0 var(--grass-dk); }
+.dot { display: inline-block; min-width: 22px; padding: 0 5px; margin-left: 6px; background: var(--red); color: #fff; font-size: 1.05rem; border: 2px solid #000; text-shadow: none; }
+
+main { padding-bottom: 40px; }
+.panel { padding: 16px; margin-bottom: 12px; }
+h2 { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-height: 1.1; margin: 0 0 6px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.center { justify-content: center; }
+.small { font-size: .9rem; color: var(--muted); }
+.lessonbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.lessonbar select { font-family: var(--display); font-size: 1.35rem; padding: 4px 8px; border: 3px solid #000; background: #fff; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .9rem; }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend i { width: 14px; height: 14px; border: 2px solid #000; display: inline-block; }
+.notice { background: #ffe9a8; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-family: var(--display); font-size: 1.35rem; line-height: 1.1; padding: 6px 14px; color: var(--ink); background: var(--panel); border: 3px solid #000; box-shadow: inset 3px 3px 0 #fff, inset -3px -3px 0 #6f6f6f; }
+.btn:hover { background: #d8d8f0; }
+.btn:active { box-shadow: inset -3px -3px 0 #fff, inset 3px 3px 0 #6f6f6f; }
+.btn.go { background: var(--grass); color: #fff; text-shadow: 2px 2px 0 #1d3a0b; box-shadow: inset 3px 3px 0 #8fd25a, inset -3px -3px 0 var(--grass-dk); }
+.btn.go:hover { background: #6db23a; }
+.btn.rec { background: #c9473f; color: #fff; text-shadow: 2px 2px 0 #4a0d09; box-shadow: inset 3px 3px 0 #ec847c, inset -3px -3px 0 #7a1b15; }
+.btn.rec.on { background: #ff2a1a; }
+.btn.buy { background: #2fb5a8; color: #fff; text-shadow: 2px 2px 0 #0b3f3a; box-shadow: inset 3px 3px 0 #7fe3d9, inset -3px -3px 0 #187a70; }
+.btn.big { font-size: 1.65rem; padding: 8px 20px; }
+.btn.sm { font-size: 1.15rem; padding: 4px 10px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.stage { padding: 22px 16px; display: grid; gap: 10px; justify-items: center; text-align: center; }
+.hanzi { font-family: var(--han); font-weight: 700; font-size: 2rem; background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; }
+.pinyin { font-size: 1.35rem; font-weight: 800; }
+.big-phrase .hanzi { font-size: 3.2rem; }
+.big-phrase .pinyin { font-size: 1.8rem; }
+.s1 { color: var(--t1); } .s2 { color: var(--t2); } .s3 { color: var(--t3); } .s4 { color: var(--t4); } .s0 { color: var(--t0); }
+.tip { font-size: .88rem; color: var(--muted); border-left: 4px solid #8b8b8b; padding-left: 10px; text-align: left; max-width: 60ch; }
+.status { font-family: var(--display); font-size: 1.75rem; line-height: 1.15; min-height: 2rem; }
+.status.turn { color: var(--red); }
+.memory { font-size: 2rem; color: var(--red); }
+.bar { width: min(340px, 100%); height: 20px; background: #222; border: 3px solid #000; padding: 2px; }
+.bar > div { height: 100%; width: 0; background: #7fe03a; box-shadow: inset 0 -4px 0 #4e9a1f; }
+.reveal { min-height: 4rem; display: grid; gap: 2px; justify-items: center; }
+.steps, .stages { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.step, .stg { font-family: var(--display); font-size: 1.2rem; padding: 2px 10px; background: #8b8b8b; color: #fff; text-shadow: 1px 1px 0 #000; border: 3px solid #000; }
+.step.on, .stg.on { background: var(--gold); color: var(--ink); text-shadow: none; }
+.step.done, .stg.done { background: var(--grass); }
+.seqhead { display: grid; gap: 4px; justify-items: center; width: 100%; }
+.seqhead b { font-family: var(--display); font-weight: 400; font-size: 1.6rem; }
+.seqhead .bar { height: 14px; }
+
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 560px; }
+.opt { justify-content: center; font-family: var(--body); font-weight: 800; font-size: 1rem; padding: 14px 10px; }
+.opt .hanzi { font-size: 1.5rem; }
+.opt.right { background: #7fe03a; }
+.opt.wrong { background: #f08a80; }
+.info { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; font-family: var(--display); font-size: 1.4rem; }
+
+.chat { display: grid; gap: 10px; width: 100%; text-align: left; align-content: start; }
+.line { max-width: 85%; display: grid; gap: 2px; }
+.line.T { justify-self: start; }
+.line.S { justify-self: end; text-align: right; }
+.who { font-family: var(--display); font-size: 1.15rem; color: var(--muted); }
+.bubble { padding: 10px 14px; border: 3px solid #000; background: #fff; }
+.line.S .bubble { background: #e3f5d2; }
+.bubble .hanzi { font-size: 1.6rem; }
+.bubble .pinyin { font-size: 1.1rem; display: block; }
+.bubble .en { font-size: .9rem; color: var(--muted); display: block; }
+.bubble.yours { background: #fff6cf; border-style: dashed; }
+.ask { font-family: var(--display); color: var(--red); font-size: 1.4rem; }
+.chat .bar { justify-self: end; width: 220px; }
+
+.list { display: grid; gap: 10px; }
+.card { display: grid; grid-template-columns: 40px 1fr; gap: 4px 12px; padding: 14px; }
+.card.playing { background: #dff3cf; }
+.num { font-family: var(--display); font-size: 1.5rem; color: #fff; background: #555; border: 3px solid #000; height: 36px; display: grid; place-items: center; }
+.phrase { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; }
+.card .eng, .card .tip, .card .actions { grid-column: 2; }
+.eng { color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.quests { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.quest { padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
+.quest b { font-family: var(--display); font-weight: 400; font-size: 1.35rem; line-height: 1.1; }
+
+.shoptabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.item { padding: 12px; display: grid; gap: 6px; align-content: start; }
+.item .bigE { font-size: 44px; line-height: 1; }
+.item.locked .bigE { filter: grayscale(1) brightness(.6); }
+.item.current { background: #ffe9a8; }
+.item .hanzi { font-size: 1.4rem; }
+.item .pinyin { font-size: 1rem; }
+.cards { display: grid; gap: 10px; }
+.cult { padding: 14px; display: grid; gap: 6px; }
+.cult h3, .vid h3 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; line-height: 1.1; margin: 0; }
+.cult p { margin: 0; max-width: 65ch; }
+.cult.locked { background: #a9a9a9; }
+.vid { padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
+.ticket { font-family: var(--display); font-size: 1.5rem; margin: 0 0 4px; }
+
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.modal .box { max-width: 420px; width: 100%; padding: 22px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.modal .title { font-family: var(--display); font-size: 2.4rem; line-height: 1; color: var(--grass-dk); }
+.modal .msg { font-size: 1.05rem; }
+.vbox { width: min(900px, 100%); padding: 14px; display: grid; gap: 10px; }
+.vtitle { font-family: var(--display); font-size: 1.5rem; }
+.vframe { position: relative; aspect-ratio: 16 / 9; background: #000; border: 3px solid #000; display: grid; place-items: center; color: #fff; text-align: center; }
+.vframe iframe, .vframe > div:not(.fallback) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.fallback { padding: 20px; display: grid; gap: 12px; justify-items: center; font-family: var(--display); font-size: 1.4rem; }
+#ytTest { position: fixed; left: -10000px; top: 0; width: 320px; height: 180px; }
+
+details.parent { margin-top: 18px; }
+details.parent summary { font-family: var(--display); font-size: 1.4rem; cursor: pointer; }
+details.parent p { margin: 8px 0; font-size: .92rem; }
+details.parent textarea { width: 100%; font-family: ui-monospace, monospace; font-size: .75rem; }
+
+@media (max-width: 520px) {
+  .opts { grid-template-columns: 1fr; }
+  .big-phrase .hanzi { font-size: 2.6rem; }
+  h1 { font-size: 2.1rem; }
+  .line { max-width: 95%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap"><h1>Chinese Block Quest <span class="han">中文方块</span></h1></div>
+  <div class="grassrow"></div>
+</header>
+
+<div class="wrap">
+  <div class="player">
+    <div class="ava" id="pAva" aria-label="Your avatar"></div>
+    <span class="lv" id="pLv">Lv 1</span>
+    <div class="xpwrap"><div class="xpbar" id="pXP"></div><span class="xptext" id="pXPt"></span></div>
+    <span class="stat" title="Gems to spend"><canvas class="gem" width="8" height="8"></canvas><span id="pGems">0</span></span>
+    <span class="stat" title="Days in a row of Daily Practice">🔥 <span id="pStreak">0</span></span>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab bevel" role="tab" aria-selected="true" data-view="lesson">📘 Lesson</button>
+    <button class="tab bevel" role="tab" aria-selected="false" data-view="daily">🗓 Daily Practice<span class="dot" id="dailyDot" hidden></span></button>
+    <button class="tab bevel" role="tab" aria-selected="false" data-view="shop">🏪 Shop</button>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="notice panel bevel" id="voiceNotice" hidden></div>
+
+  <section id="view-lesson">
+    <div class="panel bevel">
+      <div class="lessonbar">
+        <select id="lessonSel" aria-label="Lesson"></select>
+        <span class="small" id="nextLesson"></span>
+      </div>
+      <div class="legend" style="margin-top:10px" aria-label="Tone colors">
+        <span><i style="background:var(--t1)"></i>1st ā flat &amp; high</span>
+        <span><i style="background:var(--t2)"></i>2nd á goes up</span>
+        <span><i style="background:var(--t3)"></i>3rd ǎ dips down</span>
+        <span><i style="background:var(--t4)"></i>4th à drops fast</span>
+        <span><i style="background:var(--t0)"></i>light</span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="small" for="slowRate">🐢 Slow speed</label>
+        <input type="range" id="slowRate" min="0.1" max="0.7" step="0.05">
+        <span class="small" id="slowVal"></span>
+        <span class="small" id="recNote"></span>
+      </div>
+    </div>
+    <div id="lessonArea"></div>
+  </section>
+
+  <section id="view-daily" hidden><div id="dailyArea"></div></section>
+
+  <section id="view-shop" hidden>
+    <div class="panel bevel">
+      <div class="shoptabs">
+        <button class="btn" data-shop="avatars">🐉 Avatars</button>
+        <button class="btn" data-shop="culture">📜 Culture Cards</button>
+        <button class="btn" data-shop="videos">📺 Videos</button>
+      </div>
+      <div id="shopBody"></div>
+    </div>
+  </section>
+
+  <details class="parent panel bevel">
+    <summary>For parents</summary>
+    <p id="saveNote"></p>
+    <p>Each new lesson unlocks every 500 XP, which is about 3 days of solid practice. If class moves ahead faster than that, you can unlock the next lesson here.</p>
+    <button class="btn" id="unlockBtn">Unlock next lesson now</button>
+    <p><b>Backup:</b> copy a backup code to move progress to another device or browser, or to keep it safe.</p>
+    <div class="row"><button class="btn" id="bkCopy">Copy backup code</button><button class="btn" id="bkRestore">Restore from code</button></div>
+    <textarea id="bkText" rows="3" aria-label="Backup code" placeholder="Paste a backup code here, then press Restore."></textarea>
+    <p id="bkMsg" class="small"></p>
+    <p id="videoNote"></p>
+  </details>
+</main>
+
+<div class="modal" id="player" hidden>
+  <div class="vbox bevel" role="dialog" aria-modal="true" aria-labelledby="vTitle">
+    <div class="row" style="justify-content:space-between"><span class="vtitle" id="vTitle"></span><button class="btn" id="vClose">✕ Close</button></div>
+    <div class="vframe" id="vFrame"></div>
+  </div>
+</div>
+<div class="modal" id="modal" hidden>
+  <div class="box bevel" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="title" id="mTitle"></div>
+    <div class="msg" id="mMsg"></div>
+    <button class="btn go big" id="mOk">OK</button>
+  </div>
+</div>
+<div id="ytTest" aria-hidden="true"></div>
+
+<script>
+const LESSONS = [
+  {
+    id: "c1", title: "Classroom Expressions", source: "Integrated Chinese 1 · p.16",
+    phrases: [
+      { zh: "你好！", py: "Nǐ hǎo!", en: "How are you? / Hello!", tip: "Two 3rd tones in a row: the first one goes up, so it sounds like “ní hǎo.”" },
+      { zh: "老师好！", py: "Lǎo'shī hǎo!", en: "How are you, teacher?" },
+      { zh: "上课。", py: "Shàng kè.", en: "Let's begin the class." },
+      { zh: "下课。", py: "Xià kè.", en: "The class is over." },
+      { zh: "打开书。", py: "Dǎ kāi shū.", en: "Open the book." },
+      { zh: "我说，你们听。", py: "Wǒ shuō, nǐ'men tīng.", en: "I'll speak, you listen." },
+      { zh: "看黑板。", py: "Kàn hēi'bǎn.", en: "Look at the blackboard." },
+      { zh: "对不对？", py: "Duì bu duì?", en: "Is it right?", tip: "The middle “bu” is quick and light." },
+      { zh: "对！", py: "Duì!", en: "Right! Correct!" },
+      { zh: "很好！", py: "Hěn hǎo!", en: "Very good!", tip: "Two 3rd tones again: “hěn” goes up, like “hén hǎo.”" },
+      { zh: "请跟我说。", py: "Qǐng gēn wǒ shuō.", en: "Please repeat after me." },
+      { zh: "再说一遍。", py: "Zài shuō yí biàn.", en: "Say it again.", tip: "一 (yī) changes to “yí” before a 4th tone." },
+      { zh: "懂不懂？", py: "Dǒng bu dǒng?", en: "Do you understand?", tip: "The middle “bu” is quick and light." },
+      { zh: "懂了。", py: "Dǒng le.", en: "Yes, I understand." },
+      { zh: "再见！", py: "Zài'jiàn!", en: "Good-bye!" }
+    ],
+    // quest lines: [speaker, phrase number] or [speaker, {zh, py, en}] or [speaker, [n, n]] to join phrases
+    quests: [
+      { name: "Class Begins", note: "Greet the teacher", lines: [["T", 0], ["S", 1], ["T", 2], ["T", 4], ["T", 6]] },
+      { name: "Copy Me", note: "Repeat after the teacher", lines: [["T", 5], ["T", { zh: "请跟我说：你好！", py: "Qǐng gēn wǒ shuō: Nǐ hǎo!", en: "Please repeat after me: Hello!" }], ["S", 0], ["T", 11], ["S", 0], ["T", 9]] },
+      { name: "Got It?", note: "Answer questions", lines: [["T", 12], ["S", 13], ["T", 7], ["S", 8], ["T", 9]] },
+      { name: "Class Is Over", note: "Say good-bye", lines: [["T", 3], ["T", 14], ["S", 14]] },
+      { name: "Boss Level", note: "A whole class, start to end", lines: [["T", 0], ["S", 1], ["T", 2], ["T", [6, 7]], ["S", 8], ["T", 12], ["S", 13], ["T", 9], ["T", [3, 14]], ["S", 14]] }
+    ]
+  },
+  {
+    id: "c2", title: "Survival Expressions", source: "Integrated Chinese 1 · Useful Expressions B",
+    phrases: [
+      { zh: "对不起！", py: "Duì'bu'qǐ!", en: "Sorry!", tip: "The middle “bu” is quick and light." },
+      { zh: "请问……", py: "Qǐng wèn...", en: "Excuse me…; May I ask…" },
+      { zh: "谢谢！", py: "Xiè'xie!", en: "Thanks!", tip: "The second “xie” is light and short." },
+      { zh: "这是什么？", py: "Zhè shì shén'me?", en: "What is this?" },
+      { zh: "我不懂。", py: "Wǒ bù dǒng.", en: "I don't understand." },
+      { zh: "请再说一遍。", py: "Qǐng zài shuō yí biàn.", en: "Please say it one more time." },
+      { zh: "“……”中文怎么说？", py: "“...” Zhōng'wén zěn'me shuō?", en: "How do you say “…” in Chinese?", tip: "Put the English word first: “Panda” 中文怎么说？" },
+      { zh: "“……”是什么意思？", py: "“...” shì shén'me yì'si?", en: "What does “…” mean?", tip: "Put the Chinese word first: “熊猫”是什么意思？" },
+      { zh: "请你给我……", py: "Qǐng nǐ gěi wǒ...", en: "Please give me…", tip: "Four 3rd tones in a row! Only the last one dips all the way down." },
+      { zh: "请你告诉我……", py: "Qǐng nǐ gào'su wǒ...", en: "Please tell me…" }
+    ],
+    quests: [
+      { name: "What Is This?", note: "Ask about something", lines: [
+        ["S", { zh: "请问，这是什么？", py: "Qǐng wèn, zhè shì shén'me?", en: "Excuse me, what is this?" }],
+        ["T", { zh: "这是书。", py: "Zhè shì shū.", en: "This is a book." }], ["S", 2] ] },
+      { name: "Say It Again", note: "When you don't understand", lines: [
+        ["T", { zh: "请跟我说：谢谢！", py: "Qǐng gēn wǒ shuō: Xiè'xie!", en: "Please repeat after me: Thanks!" }],
+        ["S", 4], ["S", 5], ["T", 2], ["S", 2], ["T", { zh: "很好！", py: "Hěn hǎo!", en: "Very good!" }] ] },
+      { name: "Word Hunter", note: "Ask how to say a word", lines: [
+        ["S", { zh: "“Book”中文怎么说？", py: "“Book” Zhōng'wén zěn'me shuō?", en: "How do you say “book” in Chinese?" }],
+        ["T", { zh: "书。", py: "Shū.", en: "Book." }], ["S", 2] ] },
+      { name: "Oops!", note: "Say sorry and ask nicely", lines: [
+        ["T", { zh: "打开书。", py: "Dǎ kāi shū.", en: "Open the book." }],
+        ["S", { zh: "对不起！请你给我书。", py: "Duì'bu'qǐ! Qǐng nǐ gěi wǒ shū.", en: "Sorry! Please give me the book." }],
+        ["T", { zh: "好。", py: "Hǎo.", en: "OK." }], ["S", 2] ] },
+      { name: "Boss Level", note: "Greet, ask, thank", lines: [
+        ["T", { zh: "你好！", py: "Nǐ hǎo!", en: "Hello!" }], ["S", { zh: "老师好！", py: "Lǎo'shī hǎo!", en: "Hello, teacher!" }],
+        ["T", { zh: "这是什么？", py: "Zhè shì shén'me?", en: "What is this?" }], ["S", { zh: "对不起，我不懂。", py: "Duì'bu'qǐ, wǒ bù dǒng.", en: "Sorry, I don't understand." }],
+        ["T", { zh: "这是书。", py: "Zhè shì shū.", en: "This is a book." }], ["S", 2],
+        ["T", { zh: "再见！", py: "Zài'jiàn!", en: "Good-bye!" }], ["S", { zh: "老师再见！", py: "Lǎo'shī zài'jiàn!", en: "Good-bye, teacher!" }] ] }
+    ]
+  },
+  {
+    id: "c3", title: "Numbers 1–10 & Strokes", source: "Integrated Chinese 1 · Useful Expressions C",
+    phrases: [
+      { zh: "一", py: "yī", en: "one (1)", tip: "Said alone it's yī. Before other words it changes tone, like yí in 一遍." },
+      { zh: "二", py: "èr", en: "two (2)" },
+      { zh: "三", py: "sān", en: "three (3)" },
+      { zh: "四", py: "sì", en: "four (4)" },
+      { zh: "五", py: "wǔ", en: "five (5)" },
+      { zh: "六", py: "liù", en: "six (6)" },
+      { zh: "七", py: "qī", en: "seven (7)" },
+      { zh: "八", py: "bā", en: "eight (8)" },
+      { zh: "九", py: "jiǔ", en: "nine (9)" },
+      { zh: "十", py: "shí", en: "ten (10)" },
+      { zh: "点", py: "diǎn", en: "dot stroke 丶", tip: "Stroke A in the book: a short dot, top-left down to the right." },
+      { zh: "横", py: "héng", en: "horizontal stroke 一", tip: "Stroke B: straight across, left to right." },
+      { zh: "捺", py: "nà", en: "falling-right stroke 乀", tip: "Stroke C: sweeps down to the right and gets wider at the end." },
+      { zh: "竖", py: "shù", en: "vertical stroke 丨", tip: "Stroke D: straight down, top to bottom." },
+      { zh: "撇", py: "piě", en: "falling-left stroke 丿", tip: "Stroke E: sweeps down to the left." }
+    ],
+    quests: [
+      { name: "Count 1–5", note: "Count after the teacher", lines: [
+        ["T", { zh: "我说，你们听：一，二，三，四，五。", py: "Wǒ shuō, nǐ'men tīng: yī, èr, sān, sì, wǔ.", en: "I'll speak, you listen: 1, 2, 3, 4, 5." }],
+        ["T", { zh: "请跟我说。", py: "Qǐng gēn wǒ shuō.", en: "Please repeat after me." }],
+        ["S", { zh: "一，二，三，四，五。", py: "yī, èr, sān, sì, wǔ.", en: "1, 2, 3, 4, 5." }], ["T", { zh: "很好！", py: "Hěn hǎo!", en: "Very good!" }] ] },
+      { name: "Count 6–10", note: "Keep counting", lines: [
+        ["T", { zh: "六，七，八，九，十。", py: "liù, qī, bā, jiǔ, shí.", en: "6, 7, 8, 9, 10." }],
+        ["S", { zh: "六，七，八，九，十。", py: "liù, qī, bā, jiǔ, shí.", en: "6, 7, 8, 9, 10." }], ["T", { zh: "对！", py: "Duì!", en: "Right!" }] ] },
+      { name: "Blast Off", note: "Finish the countdown", lines: [
+        ["T", { zh: "十，九，八，七，六……", py: "shí, jiǔ, bā, qī, liù...", en: "10, 9, 8, 7, 6…" }],
+        ["S", { zh: "五，四，三，二，一！", py: "wǔ, sì, sān, èr, yī!", en: "5, 4, 3, 2, 1!" }], ["T", { zh: "很好！", py: "Hěn hǎo!", en: "Very good!" }] ] },
+      { name: "What Number?", note: "Ask how to say a number", lines: [
+        ["S", { zh: "请问，“8”中文怎么说？", py: "Qǐng wèn, “8” Zhōng'wén zěn'me shuō?", en: "Excuse me, how do you say “8” in Chinese?" }],
+        ["T", { zh: "八。", py: "Bā.", en: "Eight." }], ["S", { zh: "八！谢谢！", py: "Bā! Xiè'xie!", en: "Eight! Thanks!" }] ] },
+      { name: "Boss Level", note: "Odds and evens", lines: [
+        ["T", { zh: "一，三，五，七，九。", py: "yī, sān, wǔ, qī, jiǔ.", en: "1, 3, 5, 7, 9." }],
+        ["S", { zh: "二，四，六，八，十！", py: "èr, sì, liù, bā, shí!", en: "2, 4, 6, 8, 10!" }],
+        ["T", { zh: "对不对？", py: "Duì bu duì?", en: "Is it right?" }], ["S", { zh: "对！", py: "Duì!", en: "Right!" }] ] }
+    ]
+  }
+];
+
+/* Tone training: syllable, its four toned forms, and a common character for each ("-" = none) */
+const TONE_SETS = [
+  ["mā má mǎ mà", "妈麻马骂"], ["bā bá bǎ bà", "八拔把爸"], ["pā pá pǎ pà", "趴爬-怕"], ["dā dá dǎ dà", "搭达打大"],
+  ["tā tá tǎ tà", "他-塔踏"], ["lā lá lǎ là", "拉-喇辣"], ["fā fá fǎ fà", "发罚法-"], ["mī mí mǐ mì", "眯迷米密"],
+  ["bī bí bǐ bì", "逼鼻笔必"], ["dī dí dǐ dì", "低敌底弟"], ["tī tí tǐ tì", "踢题体替"], ["nī ní nǐ nì", "妮泥你腻"],
+  ["yī yí yǐ yì", "衣姨椅意"], ["wū wú wǔ wù", "屋无五雾"], ["shū shú shǔ shù", "书熟鼠树"], ["tāng táng tǎng tàng", "汤糖躺烫"],
+  ["tū tú tǔ tù", "秃图土兔"], ["jī jí jǐ jì", "鸡急挤记"], ["qī qí qǐ qì", "七骑起气"], ["xī xí xǐ xì", "西习洗戏"],
+  ["zhū zhú zhǔ zhù", "猪竹主住"], ["fū fú fǔ fù", "夫服府父"], ["māo máo mǎo mào", "猫毛-帽"]
+].map(([f, c]) => ({ forms: f.split(" "), chars: [...c].map(x => x === "-" ? null : x) }));
+
+
+const AVATARS = [
+  { k: "panda", e: "🐼", zh: "熊猫", py: "xióng'māo", en: "Panda", cost: 0 },
+  { k: "rat", e: "🐭", zh: "鼠", py: "shǔ", en: "Rat", cost: 10 },
+  { k: "ox", e: "🐮", zh: "牛", py: "niú", en: "Ox", cost: 10 },
+  { k: "tiger", e: "🐯", zh: "虎", py: "hǔ", en: "Tiger", cost: 15 },
+  { k: "rabbit", e: "🐰", zh: "兔", py: "tù", en: "Rabbit", cost: 15 },
+  { k: "dragon", e: "🐲", zh: "龙", py: "lóng", en: "Dragon", cost: 30 },
+  { k: "snake", e: "🐍", zh: "蛇", py: "shé", en: "Snake", cost: 15 },
+  { k: "horse", e: "🐴", zh: "马", py: "mǎ", en: "Horse", cost: 20 },
+  { k: "goat", e: "🐐", zh: "羊", py: "yáng", en: "Goat", cost: 15 },
+  { k: "monkey", e: "🐵", zh: "猴", py: "hóu", en: "Monkey", cost: 20 },
+  { k: "rooster", e: "🐔", zh: "鸡", py: "jī", en: "Rooster", cost: 15 },
+  { k: "dog", e: "🐶", zh: "狗", py: "gǒu", en: "Dog", cost: 15 },
+  { k: "pig", e: "🐷", zh: "猪", py: "zhū", en: "Pig", cost: 15 }
+];
+
+const CULTURE = [
+  { k: "tones", cost: 5, title: "Four tones, four words", zh: "妈，麻，马，骂", py: "mā, má, mǎ, mà",
+    text: "In Chinese, the tone changes the meaning. “Ma” with the 1st tone means mom (妈). With the 2nd tone it's hemp (麻), with the 3rd tone it's horse (马), and with the 4th tone it means to scold (骂). Tap to hear all four." },
+  { k: "wall", cost: 15, title: "The Great Wall", zh: "长城", py: "Cháng'chéng",
+    text: "Its Chinese name means “long wall.” Many dynasties built and rebuilt it over about 2,000 years, and most of the parts visitors walk on today were built during the Ming dynasty. Myth-buster: you can't actually see it from space with just your eyes." },
+  { k: "panda", cost: 15, title: "Bear-cat", zh: "熊猫", py: "xióng'māo",
+    text: "The Chinese word for panda means “bear cat.” Wild giant pandas live only in mountain forests in China, and they spend most of the day eating bamboo. A newborn panda weighs about as much as a stick of butter." },
+  { k: "chopsticks", cost: 15, title: "Chopstick manners", zh: "筷子", py: "kuài'zi",
+    text: "Never stand your chopsticks straight up in a bowl of rice. It looks like the incense sticks used to honour people who have died, so it's seen as bad luck. Lay them across your bowl or on a chopstick rest instead." },
+  { k: "newyear", cost: 15, title: "Spring Festival", zh: "春节", py: "Chūn'jié",
+    text: "Chinese New Year is called the Spring Festival. Its date follows the moon, so it moves around between late January and mid-February. Kids get red envelopes called 红包 (hóngbāo) with money inside, and firecrackers are said to scare away a monster called Nian." },
+  { k: "eight", cost: 15, title: "Lucky number 8", zh: "八", py: "bā",
+    text: "八 (bā, eight) sounds a lot like 发 (fā), which means to get rich, so 8 is a lucky number. The Beijing Olympics began on 8/8/2008 at 8:08 in the evening!" },
+  { k: "characters", cost: 15, title: "Pictures that became words", zh: "人，山，日，木", py: "rén, shān, rì, mù",
+    text: "Many Chinese characters started as little drawings. 人 is a person walking, 山 is a mountain with three peaks, 日 was a sun, and 木 is a tree. Chinese has no alphabet: each character is one syllable with its own meaning." },
+  { k: "zodiac", cost: 15, title: "The Great Race", zh: "十二生肖", py: "shí'èr shēng'xiào",
+    text: "Legend says the Jade Emperor held a race to pick 12 animals for the calendar. The clever rat rode on the ox's back and jumped off at the finish to come first. Each year is named after one animal: 2026 is the Year of the Horse." },
+  { k: "moon", cost: 15, title: "Mid-Autumn Festival", zh: "中秋节", py: "Zhōng'qiū'jié",
+    text: "On the night of the full moon in the 8th month of the Chinese calendar, families get together, look at the moon and eat round mooncakes (月饼 yuèbing). A famous legend says the moon goddess Chang'e lives up there with a jade rabbit." },
+  { k: "tea", cost: 15, title: "Tea talk", zh: "茶", py: "chá",
+    text: "People in China have been drinking tea for thousands of years. The English words “tea” and “chai” both come from Chinese: “chá” in Mandarin and “tê” in the Hokkien language of southern China." },
+  { k: "dragonboat", cost: 15, title: "Dragon Boat Festival", zh: "端午节", py: "Duān'wǔ'jié",
+    text: "Teams paddle long boats with dragon heads while a drummer keeps the beat. People eat 粽子 (zòngzi), sticky rice wrapped in bamboo leaves. The festival remembers Qu Yuan, a poet who lived over 2,000 years ago." },
+  { k: "inventions", cost: 15, title: "Four great inventions", zh: "四大发明", py: "sì dà fā'míng",
+    text: "Paper, printing, the compass and gunpowder were all invented in ancient China. In Chinese they're called the Four Great Inventions." },
+  { k: "beijing", cost: 15, title: "Northern capital", zh: "北京", py: "Běi'jīng",
+    text: "China's capital, Beijing, means “northern capital.” There's also a city called Nanjing, which means “southern capital.” 北 (běi) is north and 南 (nán) is south." }
+];
+
+// Picked by title and channel. A parent should preview them.
+const VIDEOS = [
+  { id: "9dIyk65vR-g", title: "The History of the Great Wall of China for Kids", by: "FreeSchool", cost: 0 },
+  { id: "Mtbp32YyuCs", title: "Chinese New Year for Kids", by: "Homeschool Pop", cost: 20 },
+  { id: "ML4ViwCwC1A", title: "Lunar New Year Story: The Chinese Zodiac Race", by: "Twinkl Kids TV", cost: 20 },
+  { id: "d6YeB3mRFyk", title: "Panda Facts for Kids", by: "Homeschool Pop", cost: 20 },
+  { id: "BTripQXKWoA", title: "Giant Panda Facts", by: "Animal Fact Files", cost: 20 },
+  { id: "8HK-mhT4jsA", title: "The Story of the Terra Cotta Warriors", by: "The Children's Museum of Indianapolis", cost: 20 },
+  { id: "mP5p4QbvPtc", title: "The incredible history of China's terracotta warriors", by: "TED-Ed", cost: 20 },
+  { id: "U0EySK4T2aY", title: "The secret behind how Chinese characters work", by: "TED-Ed", cost: 20 },
+  { id: "omFTIO6xEmk", title: "Four Great Inventions of Ancient China", by: "YouTube", cost: 20 },
+  { id: "b7sU3v7lSDs", title: "Mid-Autumn Festival: The Chinese Moon Festival Explained", by: "Skritter Chinese", cost: 20 },
+  { id: "uEq-bGo72Jc", title: "Dragon Boat Festival for Kids", by: "YouTube", cost: 20 },
+  { id: "K6MCS1MlVbc", title: "All About China for Kids", by: "YouTube", cost: 20 },
+  { id: "iEueKKpWKAI", title: "10 Fun Facts about China for Children", by: "YouTube", cost: 20 }
+];
+
+
+
+/* =========================================================
+   rules: every activity pays XP (keeps growing) and gems (to spend)
+   ========================================================= */
+const XP_PER_LEVEL = 100, XP_PER_LESSON = 500;   // about 3 days of solid practice
+const PAY = {
+  coach:      { xp: 5,  gems: 1 },   // one phrase learned in a lesson
+  lessonQuest:{ xp: 20, gems: 3 },
+  check:      { xp: 3,  gems: 1 },   // lesson Gem Check, first try
+  lessonDone: { xp: 50, gems: 15 },
+  review:     { xp: 3,  gems: 1 },   // Daily Practice word, first try
+  tone:       { xp: 2,  gems: 1 },   // Daily Practice tone, first try
+  dailyQuest: { xp: 20, gems: 3 },
+  dailyDone:  { xp: 20, gems: 5 },
+  quick:      { xp: 5,  gems: 1 },   // lesson play-through, once a day per lesson
+  levelUp:    { gems: 5 },
+  // extra practice after Daily Practice: XP always, gems until the daily cap
+  xWord: { xp: 2, gems: 1 }, xTone: { xp: 2, gems: 1 }, xQuest: { xp: 10, gems: 2 }, xCoach: { xp: 3, gems: 1 }
+};
+const EXTRA_GEM_CAP = 10;
+const BOX_DAYS = [0, 1, 2, 4, 7, 14, 30];
+const REVIEW_MAX = 20;
+
+/* =========================================================
+   helpers
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function dstr(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function today() { return dstr(new Date()); }
+function addDays(s, n) { const [y, m, d] = s.split("-").map(Number); return dstr(new Date(y, m - 1, d + n)); }
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+const TONES = { 1: "āēīōūǖĀĒĪŌŪ", 2: "áéíóúǘÁÉÍÓÚ", 3: "ǎěǐǒǔǚǍĚǏǑǓ", 4: "àèìòùǜÀÈÌÒÙ" };
+function toneOf(s) { for (const t of [1, 2, 3, 4]) for (const c of TONES[t]) if (s.includes(c)) return t; return 0; }
+function pinyinHTML(py) {
+  return py.split(" ").map(word => {
+    const m = word.match(/^(.*?)([!?.,:]*)$/);
+    return m[1].split("'").map(s => `<span class="s${toneOf(s)}">${s}</span>`).join("") + (m[2] || "");
+  }).join(" ");
+}
+const syllables = py => py.split(/[\s']+/).filter(Boolean).length;
+
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function texture(n, seed, paint) {
+  const c = document.createElement("canvas"); c.width = c.height = n;
+  const x = c.getContext("2d"), r = rng(seed);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { x.fillStyle = paint(i, j, r); x.fillRect(i, j, 1, 1); }
+  return `url(${c.toDataURL()})`;
+}
+const pick = (a, r) => a[Math.floor(r() * a.length)];
+const DIRT = ["#6b4a2f", "#5e3f27", "#79553a", "#4f3420", "#86603f"], GREEN = ["#5d9b2f", "#4f8a27", "#6aab36", "#47801f"];
+document.documentElement.style.setProperty("--dirt", texture(16, 7, (i, j, r) => pick(DIRT, r)));
+document.documentElement.style.setProperty("--grassTex", texture(16, 3, (i, j, r) => j < 5 + Math.floor(rng(i * 31)() * 4) ? pick(GREEN, r) : pick(DIRT, r)));
+const GEM_MAP = ["...aa...", "..abba..", ".abbbca.", "abbbbcca", "abbbccca", ".acccca.", "..acca..", "...aa..."];
+function drawGems() {
+  document.querySelectorAll("canvas.gem").forEach(cv => {
+    if (cv.dataset.drawn) return; cv.dataset.drawn = 1;
+    const g = cv.getContext("2d"); const col = { a: "#0b5d2a", b: "#41e07a", c: "#17a54a" };
+    GEM_MAP.forEach((row, y) => [...row].forEach((ch, x) => { if (col[ch]) { g.fillStyle = col[ch]; g.fillRect(x, y, 1, 1); } }));
+  });
+}
+const GEM = '<canvas class="gem" width="8" height="8" style="width:18px;height:18px;vertical-align:-3px"></canvas>';
+
+/* =========================================================
+   saved progress
+   ========================================================= */
+const LS_KEY = "cbq-progress-v1";
+function blankDay() { return { date: today(), learn: [], quick: [], extraGems: 0, dailyDone: false, video: "" }; }
+function blank() {
+  return { v: 2, updated: 0, xp: 0, gems: 0, bonusLessons: 0, avatar: "panda",
+    owned: { avatars: ["panda"], culture: [], videos: [VIDEOS[0].id] },
+    srs: {}, done: [], lp: {}, qlast: {}, vid: {}, streak: { count: 0, last: "" },
+    day: blankDay(), seen: { level: 1, lessons: 1 }, ui: { lesson: 0, slow: 0.3 } };
+}
+function normalize(s) {
+  const b = blank(); s = s && typeof s === "object" ? s : {};
+  const out = Object.assign(b, s);
+  for (const k of ["owned", "seen", "ui", "streak"]) out[k] = Object.assign(blank()[k], s[k] || {});
+  out.day = Object.assign(blankDay(), s.day || {});
+  // upgrade from the first version (single Listen/Repeat/Gem Hunt tabs)
+  if ((s.v || 1) < 2) {
+    out.done = [];
+    const reviewed = Object.entries(out.srs || {}).filter(([, r]) => r.b >= 1);
+    for (const [id] of reviewed) { const lid = id.split(":")[0]; if (!out.done.includes(lid)) out.done.push(lid); }
+    out.srs = Object.fromEntries(reviewed);
+    if (s.day && s.day.reviewDone) out.day.dailyDone = true;
+    out.v = 2;
+  }
+  return out;
+}
+let S;
+try { S = normalize(JSON.parse(localStorage.getItem(LS_KEY))); } catch (e) { S = blank(); }
+
+let remote = null, writing = false, pending = false, pushTimer = null;
+function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {} }
+function save() { S.updated = Date.now(); saveLocal(); clearTimeout(pushTimer); pushTimer = setTimeout(pushRemote, 1200); }
+async function pushRemote() {
+  if (!remote) return;
+  if (writing) { pending = true; return; }
+  writing = true;
+  try { await remote.set({ state: JSON.parse(JSON.stringify(S)) }); }
+  catch (e) { if (e && (e.code === "invalid_argument" || e.code === "revoked")) { remote = null; setSaveNote(); } }
+  writing = false;
+  if (pending) { pending = false; pushRemote(); }
+}
+function setSaveNote() {
+  $("saveNote").textContent = remote
+    ? "Progress is saved to your Claude account, so it's the same wherever you open this page while signed in."
+    : "Progress is saved in this browser. Use a backup code below to move it or keep it safe.";
+}
+async function initRemote() {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id(); if (!uid) return;
+    const ref = db.doc(`data/users/${uid}/blockquest`);
+    const snap = await ref.get();
+    remote = ref; setSaveNote();
+    const r = snap.exists ? snap.data() : null;
+    if (r && r.state && (r.state.updated || 0) > (S.updated || 0)) {
+      S = normalize(JSON.parse(JSON.stringify(r.state))); saveLocal(); startDay(); renderAll();
+    } else if (S.updated) pushRemote();
+  } catch (e) { remote = null; }
+}
+
+/* ---------- derived ---------- */
+const level = () => 1 + Math.floor(S.xp / XP_PER_LEVEL);
+const lessonsUnlocked = () => 1 + Math.floor(S.xp / XP_PER_LESSON) + S.bonusLessons;
+const availLessons = () => LESSONS.slice(0, Math.min(lessonsUnlocked(), LESSONS.length));
+const curLesson = () => { const a = availLessons(); return a[Math.min(S.ui.lesson, a.length - 1)]; };
+const itemId = (L, i) => L.id + ":" + i;
+function getItem(id) { const [lid, i] = id.split(":"); const L = LESSONS.find(l => l.id === lid); return L && L.phrases[+i]; }
+function allItems() { return availLessons().flatMap(L => L.phrases.map((p, i) => ({ id: itemId(L, i), p }))); }
+function doneLessons() { return LESSONS.filter(L => S.done.includes(L.id)); }
+function startDay() {
+  if (S.day.date !== today()) S.day = blankDay();
+  // every phrase of a finished lesson belongs in the review schedule
+  for (const L of doneLessons()) L.phrases.forEach((_, i) => { const id = itemId(L, i); if (!S.srs[id]) S.srs[id] = { b: 0, due: today() }; });
+}
+function dueIds() {
+  const t = today();
+  return Object.entries(S.srs).filter(([id, r]) => r.due <= t && getItem(id))
+    .sort((a, b) => a[1].due < b[1].due ? -1 : a[1].due > b[1].due ? 1 : 0).map(([id]) => id);
+}
+function schedule(id, right) {
+  const r = S.srs[id] || { b: 0, due: today() };
+  if (right) { r.b = Math.min(6, r.b + 1); r.due = addDays(today(), BOX_DAYS[r.b]); }
+  else { r.b = 1; r.due = addDays(today(), 1); }
+  S.srs[id] = r;
+}
+
+/* ---------- rewards + celebrations ---------- */
+const modalQueue = [];
+function celebrate(title, msg) { modalQueue.push({ title, msg }); if ($("modal").hidden) nextModal(); }
+function nextModal() {
+  const m = modalQueue.shift(); if (!m) { $("modal").hidden = true; return; }
+  $("mTitle").textContent = m.title; $("mMsg").innerHTML = m.msg; $("modal").hidden = false; drawGems(); $("mOk").focus();
+}
+$("mOk").onclick = nextModal;
+
+// pay out an activity; extra = after Daily Practice, where gems are capped per day
+function pay(kind, extra) {
+  const p = PAY[kind]; let gems = p.gems || 0;
+  if (extra) { gems = Math.max(0, Math.min(gems, EXTRA_GEM_CAP - S.day.extraGems)); S.day.extraGems += gems; }
+  S.xp += p.xp || 0; S.gems += gems;
+  checkUps(); save(); renderPlayer();
+  return [p.xp ? `+${p.xp} XP` : "", gems ? `+${gems} ${GEM}` : ""].filter(Boolean).join(" ");
+}
+function checkUps() {
+  while (level() > S.seen.level) {
+    S.seen.level++; S.gems += PAY.levelUp.gems;
+    celebrate("LEVEL UP!", `You reached <b>Level ${S.seen.level}</b>!<br>+${PAY.levelUp.gems} ${GEM}`);
+  }
+  while (lessonsUnlocked() > S.seen.lessons) {
+    S.seen.lessons++;
+    const L = LESSONS[S.seen.lessons - 1];
+    if (L) celebrate("New lesson!", `<b>Lesson ${S.seen.lessons}: ${esc(L.title)}</b> is unlocked. Pick it from the Lesson menu.`);
+    else celebrate("Lesson unlocked!", `You've earned <b>Lesson ${S.seen.lessons}</b>! Ask a parent to add the new words from class.`);
+  }
+}
+
+function renderPlayer() {
+  const a = AVATARS.find(x => x.k === S.avatar) || AVATARS[0];
+  $("pAva").textContent = a.e; $("pAva").title = `${a.zh} ${a.en}`;
+  $("pLv").textContent = "Lv " + level();
+  const into = S.xp % XP_PER_LEVEL;
+  $("pXP").innerHTML = Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.floor(into / 10) ? "on" : ""}"></i>`).join("");
+  $("pXPt").textContent = `${into} / ${XP_PER_LEVEL} XP to Level ${level() + 1}  ·  ${S.xp} XP total`;
+  $("pGems").textContent = S.gems; $("pStreak").textContent = S.streak.count;
+  const due = Math.min(dueIds().length, REVIEW_MAX);
+  $("dailyDot").hidden = S.day.dailyDone || !doneLessons().length;
+  $("dailyDot").textContent = due || "!";
+  const av = availLessons();
+  $("lessonSel").innerHTML = av.map((L, i) => `<option value="${i}" ${i === Math.min(S.ui.lesson, av.length - 1) ? "selected" : ""}>Lesson ${i + 1}: ${esc(L.title)}${S.done.includes(L.id) ? " ✔" : ""}</option>`).join("");
+  $("nextLesson").textContent = lessonsUnlocked() > LESSONS.length
+    ? `Lesson ${LESSONS.length + 1} is unlocked and waiting for new words.`
+    : `Lesson ${lessonsUnlocked() + 1} unlocks at ${(Math.floor(S.xp / XP_PER_LESSON) + 1) * XP_PER_LESSON} XP (you have ${S.xp}).`;
+}
+$("lessonSel").onchange = e => { stopAll(); S.ui.lesson = +e.target.value; saveLocal(); renderPlayer(); renderLessonTab(); };
+
+/* =========================================================
+   speech
+   ========================================================= */
+const synth = window.speechSynthesis;
+let zhVoice = null, voicesChecked = false;
+const PREFERRED = [/tingting|ting-ting/i, /xiaoxiao/i, /google.*(普通话|mandarin)/i, /yaoyao|huihui|kangkang/i, /meijia/i];
+function pickVoice() {
+  if (!synth) return;
+  const voices = synth.getVoices().filter(v => /^zh/i.test(v.lang) || /cmn/i.test(v.lang));
+  const main = voices.filter(v => /CN|Hans|cmn/i.test(v.lang)); const pool = main.length ? main : voices;
+  zhVoice = null;
+  for (const re of PREFERRED) { zhVoice = pool.find(v => re.test(v.name)); if (zhVoice) break; }
+  if (!zhVoice) zhVoice = pool[0] || null;
+  const n = $("voiceNotice");
+  if (!zhVoice && voicesChecked) { n.hidden = false; n.innerHTML = "No Mandarin voice was found on this device, so the sound may be wrong. iPad/iPhone: Settings → Accessibility → Spoken Content → Voices → Chinese. Windows: Settings → Time &amp; language → Speech → add Chinese (Simplified). Or open this page in Chrome."; }
+  else n.hidden = true;
+}
+if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; setTimeout(() => { voicesChecked = true; pickVoice(); }, 1500); }
+else { $("voiceNotice").hidden = false; $("voiceNotice").textContent = "This browser can't speak out loud. Try Chrome, Safari or Edge."; }
+
+function speak(text, { slow = false, pitch = 1 } = {}) {
+  return new Promise(resolve => {
+    if (!synth) return resolve(0);
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(String(text).replace(/[“”"‘’…]/g, ""));
+    u.lang = zhVoice ? zhVoice.lang : "zh-CN"; if (zhVoice) u.voice = zhVoice;
+    u.rate = slow ? (S.ui.slow || 0.3) : 0.85; u.pitch = pitch;
+    const t0 = performance.now(); let fin = false;
+    const finish = () => { if (!fin) { fin = true; resolve(performance.now() - t0); } };
+    u.onend = finish; u.onerror = finish; setTimeout(finish, 12000);
+    synth.speak(u);
+  });
+}
+let token = 0;
+function stopAll() { token++; if (synth) synth.cancel(); }
+function fillBar(el, ms, my) {
+  return new Promise(res => {
+    const t0 = performance.now();
+    (function step(now) {
+      if (my !== token) return res(false);
+      const f = Math.min(1, (now - t0) / ms); el.style.width = (f * 100) + "%";
+      f < 1 ? requestAnimationFrame(step) : res(true);
+    })(t0);
+  });
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) speak(b.dataset.say); });
+function showSlow() { $("slowRate").value = S.ui.slow; $("slowVal").textContent = S.ui.slow <= 0.2 ? "snail" : S.ui.slow <= 0.35 ? "very slow" : S.ui.slow <= 0.5 ? "slow" : "a bit slow"; }
+$("slowRate").addEventListener("input", e => { S.ui.slow = +e.target.value; showSlow(); });
+$("slowRate").addEventListener("change", () => { save(); speak(curLesson().phrases[0].zh, { slow: true }); });
+
+/* =========================================================
+   recordings: in this tab's memory only, never saved to disk
+   ========================================================= */
+let micAllowed = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+try { const pol = document.permissionsPolicy || document.featurePolicy; if (pol && pol.allowsFeature && !pol.allowsFeature("microphone")) micAllowed = false; } catch (e) {}
+const myRecs = {};
+let recorder = null, recKey = null, recTimer = null, recAfter = null;
+function deleteRec(k) { if (myRecs[k]) { URL.revokeObjectURL(myRecs[k]); delete myRecs[k]; } }
+async function toggleRecord(k, after) {
+  if (recorder && recorder.state === "recording") { recorder.stop(); return; }
+  recAfter = after;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = []; recorder = new MediaRecorder(stream); recKey = k;
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.onstop = () => {
+      clearTimeout(recTimer); stream.getTracks().forEach(t => t.stop());
+      deleteRec(k); myRecs[k] = URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType }));
+      recKey = null; recAfter && recAfter();
+    };
+    recorder.start(); recTimer = setTimeout(() => recorder.state === "recording" && recorder.stop(), 6000);
+    after && after();
+  } catch (e) { micAllowed = false; setRecNote(); after && after(); }
+}
+function playMine(k) { return new Promise(res => { const a = new Audio(myRecs[k]); a.onended = res; a.onerror = res; a.play().catch(res); }); }
+window.addEventListener("pagehide", () => Object.keys(myRecs).forEach(deleteRec));
+function setRecNote() { $("recNote").textContent = micAllowed ? "Recordings stay in this tab only and vanish when you close it." : "Recording isn't available on this page."; }
+
+/* =========================================================
+   activity components. Each one fills a root element and calls back.
+   ========================================================= */
+const STEPS = [
+  { k: "listen", label: "👂 Listen" }, { k: "slow", label: "🐢 Slow" }, { k: "echo", label: "🔁 Echo" },
+  { k: "record", label: "🎙 Record" }, { k: "memory", label: "🧠 From memory" }
+];
+
+// Coach: one phrase, five ways
+function coach(root, L, i, { header = "", onDone }) {
+  let step = 0;
+  const p = L.phrases[i], k = itemId(L, i);
+  const steps = () => STEPS.filter(s => s.k !== "record" || micAllowed);
+  const btns = h => { root.querySelector("#cBtns").innerHTML = h; };
+  const status = (t, turn) => { const el = root.querySelector("#cStatus"); el.className = "status" + (turn ? " turn" : ""); el.innerHTML = t; };
+  function render(auto) {
+    stopAll(); const my = token;
+    if (step >= steps().length) step = steps().length - 1;
+    const st = steps()[step], hide = st.k === "memory";
+    root.innerHTML = `<div class="stage panel bevel">${header}
+      <div class="steps">${steps().map((x, j) => `<button class="step ${j === step ? "on" : j < step ? "done" : ""}" data-s="${j}">${j + 1}. ${x.label}</button>`).join("")}</div>
+      <div class="status" id="cStatus"></div>
+      <div class="bar" id="cBarWrap" hidden><div id="cBar"></div></div>
+      <div class="reveal big-phrase">
+        <button class="hanzi" id="cHanzi" ${hide ? "hidden" : ""}>${p.zh}</button>
+        <div class="pinyin" id="cPinyin">${hide ? "" : pinyinHTML(p.py)}</div>
+        <div class="small">${hide ? "" : esc(p.en)}</div>
+        ${p.tip && !hide ? `<div class="tip">${esc(p.tip)}</div>` : ""}
+      </div>
+      <div class="row center" id="cBtns"></div></div>`;
+    const next = step < steps().length - 1 ? `<button class="btn go big" data-c="next">Next step →</button>` : "";
+    if (st.k === "listen") {
+      status("👂 Listen to the whole phrase."); btns(`<button class="btn big" data-c="play">🔊 Play again</button>${next}`);
+      if (auto) (async () => { await speak(p.zh); if (my !== token) return; await sleep(700); if (my === token) speak(p.zh); })();
+    } else if (st.k === "slow") {
+      status("🐢 Now slowly. Watch the tone colours."); btns(`<button class="btn big" data-c="slowplay">🐢 Slow again</button>${next}`);
+      if (auto) speak(p.zh, { slow: true });
+    } else if (st.k === "echo") {
+      status("🔁 Listen, then say it out loud when the bar fills."); btns(`<button class="btn go big" data-c="echo">▶ Start</button>`);
+      if (auto) echo();
+    } else if (st.k === "record") {
+      const on = recKey === k;
+      status(on ? "🎙 Recording… say it, then press Stop." : myRecs[k] ? "Compare your voice with the teacher's." : "🎙 Press Record and say the phrase.");
+      btns(`<button class="btn rec big ${on ? "on" : ""}" data-c="rec">${on ? "■ Stop" : "● Record"}</button>
+        ${myRecs[k] && !on ? `<button class="btn big" data-c="mine">▶ Me</button><button class="btn big" data-c="cmp">⇄ Compare</button>` : ""}${next}`);
+    } else {
+      status(`🧠 Say it in Chinese:<br><span class="memory">“${esc(p.en)}”</span>`, true);
+      btns(`<button class="btn go big" data-c="memory">▶ I'm ready</button><button class="btn big" data-c="peek">👀 Peek</button>`);
+    }
+  }
+  async function echo() {
+    stopAll(); const my = token; btns("");
+    const bw = root.querySelector("#cBarWrap"), bar = root.querySelector("#cBar"); bw.hidden = false; bar.style.width = "0";
+    status("👂 Listen…");
+    const dur = await speak(p.zh); if (my !== token) return;
+    status("🗣 Your turn! Say it out loud.", true);
+    if (!await fillBar(bar, Math.max(2500, dur * 1.8), my)) return;
+    status("👂 Listen again. Did yours match?");
+    await speak(p.zh); if (my !== token) return;
+    status("How did it go?");
+    btns(`<button class="btn big" data-c="echo">↺ Again</button><button class="btn go big" data-c="next">Next step →</button>`);
+  }
+  async function memory() {
+    stopAll(); const my = token; btns("");
+    const bw = root.querySelector("#cBarWrap"), bar = root.querySelector("#cBar"); bw.hidden = false;
+    if (!await fillBar(bar, 3500 + syllables(p.py) * 500, my)) return;
+    root.querySelector("#cHanzi").hidden = false; root.querySelector("#cPinyin").innerHTML = pinyinHTML(p.py);
+    status("Check: did you say it like this?");
+    await speak(p.zh); if (my !== token) return;
+    btns(`<button class="btn big" data-c="memory">↺ Try again</button><button class="btn go big" data-c="done">✔ Got it!</button>`);
+  }
+  root.onclick = e => {
+    const sb = e.target.closest(".step[data-s]"); if (sb) { step = +sb.dataset.s; return render(true); }
+    if (e.target.closest("#cHanzi")) return speak(p.zh);
+    const b = e.target.closest("[data-c]"); if (!b) return;
+    const c = b.dataset.c;
+    if (c === "next") { step++; render(true); }
+    else if (c === "play") speak(p.zh);
+    else if (c === "slowplay") speak(p.zh, { slow: true });
+    else if (c === "echo") echo();
+    else if (c === "rec") toggleRecord(k, () => render(false));
+    else if (c === "mine") playMine(k);
+    else if (c === "cmp") (async () => { await speak(p.zh); await sleep(400); await playMine(k); })();
+    else if (c === "memory") memory();
+    else if (c === "peek") { root.querySelector("#cPinyin").innerHTML = pinyinHTML(p.py); b.remove(); }
+    else if (c === "done") { stopAll(); onDone(); }
+  };
+  render(true);
+}
+
+// Word question: hear it (or read it) and pick the meaning
+function wordQ(root, id, { header = "", onRight, onNext }) {
+  stopAll();
+  const p = getItem(id), type = Math.random() < 0.7 ? "listen" : "read";
+  const others = shuffle(allItems().filter(x => x.id !== id && x.p.en !== p.en)).slice(0, 3).map(x => x.id);
+  const opts = shuffle([id, ...others]);
+  let missed = false, answered = false;
+  root.innerHTML = `<div class="stage panel bevel">${header}
+    <div class="status" id="wStatus">${type === "listen" ? "🔊 Listen. What does it mean?" : `📖 Which one means “${esc(p.en)}”?`}</div>
+    ${type === "listen" ? `<div class="row center"><button class="btn go big" data-w="play">🔊 Hear it</button><button class="btn big" data-w="slow">🐢 Slow</button></div>` : ""}
+    <div class="opts">${opts.map(o => { const q = getItem(o); return type === "listen"
+      ? `<button class="opt btn" data-id="${o}">${esc(q.en)}</button>`
+      : `<button class="opt btn" data-id="${o}"><span><span class="hanzi">${q.zh}</span><br><span class="pinyin" style="font-size:1rem">${pinyinHTML(q.py)}</span></span></button>`; }).join("")}</div>
+    <div class="reveal" id="wReveal"></div>
+    <div class="row center"><button class="btn go big" data-w="next" hidden>Next →</button></div></div>`;
+  if (type === "listen") speak(p.zh);
+  root.onclick = e => {
+    const w = e.target.closest("[data-w]");
+    if (w) { if (w.dataset.w === "play") speak(p.zh); if (w.dataset.w === "slow") speak(p.zh, { slow: true }); if (w.dataset.w === "next") { stopAll(); onNext(); } return; }
+    const b = e.target.closest(".opt"); if (!b || answered) return;
+    if (b.dataset.id === id) {
+      b.classList.add("right"); answered = true;
+      const note = onRight(!missed);
+      root.querySelector("#wStatus").innerHTML = (missed ? "✔ That's it. You'll see it again soon. " : "💎 Got it! ") + (note || "");
+      root.querySelector("#wReveal").innerHTML = `<button class="hanzi" style="font-size:2.4rem" data-say="${p.zh}">${p.zh}</button><div class="pinyin">${pinyinHTML(p.py)}</div><div class="small">${esc(p.en)} · now say it yourself!</div>`;
+      const n = root.querySelector('[data-w="next"]'); n.hidden = false; n.focus(); drawGems(); speak(p.zh);
+    } else {
+      b.classList.add("wrong"); missed = true;
+      root.querySelector("#wStatus").textContent = type === "listen" ? "Not that one. Listen again and try another." : "Not that one. Try another.";
+      if (type === "listen") speak(p.zh, { slow: true });
+    }
+  };
+}
+
+// Tone question
+const TONE_NAMES = ["", "1st · high & flat", "2nd · goes up", "3rd · dips down", "4th · drops fast"];
+function toneQ(root, { header = "", onRight, onNext }) {
+  stopAll();
+  const set = TONE_SETS[Math.floor(Math.random() * TONE_SETS.length)];
+  const tones = [1, 2, 3, 4].filter(t => set.chars[t - 1]);
+  const t = tones[Math.floor(Math.random() * tones.length)], ch = set.chars[t - 1];
+  let missed = false, answered = false;
+  root.innerHTML = `<div class="stage panel bevel">${header}
+    <div class="status" id="tStatus">🎵 Which tone did you hear?</div>
+    <div class="row center"><button class="btn go big" data-w="play">🔊 Hear it</button><button class="btn big" data-w="slow">🐢 Slow</button></div>
+    <div class="opts">${[1, 2, 3, 4].map(n => `<button class="opt btn" data-tone="${n}"><span><span class="pinyin s${n}" style="font-size:1.6rem">${set.forms[n - 1]}</span><br><span class="small">${TONE_NAMES[n]}</span></span></button>`).join("")}</div>
+    <div class="reveal" id="tReveal"></div>
+    <div class="row center"><button class="btn go big" data-w="next" hidden>Next →</button></div></div>`;
+  speak(ch);
+  root.onclick = async e => {
+    const w = e.target.closest("[data-w]");
+    if (w) {
+      if (w.dataset.w === "play") speak(ch); if (w.dataset.w === "slow") speak(ch, { slow: true }); if (w.dataset.w === "next") { stopAll(); onNext(); }
+      if (w.dataset.w === "all") { stopAll(); const my = token; for (const c of set.chars) { if (my !== token) return; if (c) { await speak(c, { slow: true }); await sleep(250); } } }
+      return;
+    }
+    const b = e.target.closest(".opt"); if (!b || answered) return;
+    if (+b.dataset.tone === t) {
+      b.classList.add("right"); answered = true;
+      const note = onRight(!missed);
+      root.querySelector("#tStatus").innerHTML = (missed ? "✔ That's the one. " : "🎵 Yes! ") + (note || "");
+      root.querySelector("#tReveal").innerHTML = `<span class="hanzi" style="font-size:2.4rem">${ch}</span><div class="pinyin s${t}">${set.forms[t - 1]} · ${TONE_NAMES[t]}</div><button class="btn" data-w="all">🔊 Hear all the tones</button>`;
+      const n = root.querySelector('[data-w="next"]'); n.hidden = false; n.focus(); drawGems();
+    } else {
+      b.classList.add("wrong"); missed = true;
+      root.querySelector("#tStatus").textContent = "Not that one. Listen again: flat, up, dip, or drop?";
+      speak(ch, { slow: true });
+    }
+  };
+}
+
+// Talk quest
+const VOICE = { T: { pitch: 0.85, name: "📘 老师 Teacher" }, S: { pitch: 1.35, name: "🎒 学生 Student" } };
+function lineOf(L, x) {
+  if (typeof x === "number") return L.phrases[x];
+  if (Array.isArray(x)) { const ps = x.map(n => L.phrases[n]); return { zh: ps.map(p => p.zh).join(""), py: ps.map(p => p.py).join(" "), en: ps.map(p => p.en).join(" ") }; }
+  return x;
+}
+function questRun(root, L, q, { header = "", role = "S", onDone, doneLabel = "Continue →" }) {
+  stopAll();
+  const bubble = l => `<span class="hanzi">${l.zh}</span><span class="pinyin">${pinyinHTML(l.py)}</span><span class="en">${esc(l.en)}</span>`;
+  root.innerHTML = `<div class="stage panel bevel">${header}
+    <h2>💬 ${esc(q.name)}</h2>
+    <div class="small">${esc(q.note)}. You are the ${role === "S" ? "student" : "teacher"}: say your lines out loud before the timer runs out.</div>
+    <div class="row center"><label class="small"><input type="checkbox" id="qSlow"> Slow &amp; more time</label></div>
+    <div class="chat" id="qChat"></div>
+    <div class="row center" id="qBtns"><button class="btn go big" data-q="start">▶ Start</button></div></div>`;
+  const chat = root.querySelector("#qChat");
+  function add(who, html, cls = "") {
+    const d = document.createElement("div"); d.className = `line ${who}`;
+    d.innerHTML = `<span class="who">${VOICE[who].name}${who === role ? " (you)" : ""}</span><div class="bubble ${cls}">${html}</div>`;
+    chat.appendChild(d); d.scrollIntoView({ block: "nearest", behavior: "smooth" }); return d;
+  }
+  async function run() {
+    stopAll(); const my = token, slow = root.querySelector("#qSlow").checked;
+    chat.innerHTML = ""; root.querySelector("#qBtns").innerHTML = `<button class="btn big" data-q="stop">■ Stop</button>`;
+    for (const [who, x] of q.lines) {
+      if (my !== token) return;
+      const l = lineOf(L, x);
+      if (who !== role) { add(who, bubble(l)); await speak(l.zh, { slow, pitch: VOICE[who].pitch }); await sleep(slow ? 900 : 500); }
+      else {
+        const el = add(who, `<div class="ask">Your turn! Say:</div><span class="en">“${esc(l.en)}”</span><button class="btn sm" style="margin-top:6px">👀 Peek</button>`, "yours");
+        const bar = document.createElement("div"); bar.className = "bar"; bar.innerHTML = "<div></div>"; el.appendChild(bar);
+        el.querySelector("button").onclick = ev => { ev.target.outerHTML = `<span class="pinyin">${pinyinHTML(l.py)}</span>`; };
+        if (!await fillBar(bar.firstChild, (slow ? 5000 : 3500) + syllables(l.py) * (slow ? 700 : 450), my)) return;
+        bar.remove();
+        const b = el.querySelector(".bubble"); b.classList.remove("yours"); b.innerHTML = bubble(l) + `<span class="en">✔ Check: did you say it like this?</span>`;
+        await speak(l.zh, { slow, pitch: VOICE[who].pitch }); await sleep(slow ? 1000 : 600);
+      }
+    }
+    if (my !== token) return;
+    const note = onDone.pay ? onDone.pay() : "";
+    root.querySelector("#qBtns").innerHTML = `<div style="display:grid;gap:8px;justify-items:center"><span class="status">⭐ Quest complete! ${note}</span>
+      <div class="row center"><button class="btn big" data-q="start">↺ Play again</button><button class="btn go big" data-q="done">${doneLabel}</button></div></div>`;
+    drawGems();
+  }
+  root.onclick = e => {
+    const b = e.target.closest("[data-q]"); if (!b) return;
+    if (b.dataset.q === "start") run();
+    if (b.dataset.q === "stop") { stopAll(); root.querySelector("#qBtns").innerHTML = `<button class="btn go big" data-q="start">▶ Start</button>`; }
+    if (b.dataset.q === "done") { stopAll(); onDone(); }
+  };
+}
+
+// Sequencer: runs a list of steps (word / tone / quest) with a progress bar
+function runSeq(root, seq) {
+  // seq: { title, steps, i, pay(step, firstTry) -> note, onFinish, retry }
+  if (seq.i >= seq.steps.length) return seq.onFinish();
+  const st = seq.steps[seq.i];
+  const header = (seq.pre || "") + `<div class="seqhead"><b>${esc(seq.title)}</b><span class="small">${seq.i + 1} of ${seq.steps.length}</span><div class="bar"><div style="width:${seq.i / seq.steps.length * 100}%"></div></div></div>`;
+  const next = () => { seq.i++; runSeq(root, seq); };
+  if (st.t === "word") wordQ(root, st.id, { header, onNext: next, onRight: ft => {
+    if (!ft && seq.retry && !st.again) seq.steps.push({ t: "word", id: st.id, again: true });
+    return seq.pay(st, ft);
+  } });
+  else if (st.t === "tone") toneQ(root, { header, onNext: next, onRight: ft => seq.pay(st, ft) });
+  else if (st.t === "quest") {
+    const L = LESSONS.find(l => l.id === st.lid), q = L.quests[st.qi];
+    const done = () => next(); done.pay = () => seq.pay(st, true);
+    questRun(root, L, q, { header, onDone: done });
+  }
+}
+
+/* =========================================================
+   LESSON TAB: first time = walkthrough, afterwards = quick review
+   ========================================================= */
+let lessonSeq = null, reviewQuest = null;
+function renderLessonTab() {
+  stopAll(); const L = curLesson(), root = $("lessonArea");
+  const lp = S.lp[L.id] || (S.lp[L.id] = { stage: 0, idx: 0 });
+  if (S.done.includes(L.id) && !lp.redo) return renderReview(L, root);
+  const first = !S.done.includes(L.id);
+  const stages = [`1. 👂 Learn the phrases`, `2. 💬 Talk Quests`, `3. 💎 Gem Check`];
+  const counts = [`${Math.min(lp.idx + (lp.stage > 0 ? L.phrases.length : 0), L.phrases.length)}/${L.phrases.length}`, `${lp.stage > 1 ? L.quests.length : lp.stage === 1 ? lp.idx : 0}/${L.quests.length}`, ""];
+  const head = `<div class="stages">${stages.map((s, i) => `<span class="stg ${i === lp.stage ? "on" : i < lp.stage ? "done" : ""}">${s} ${counts[i]}</span>`).join("")}</div>`;
+  if (lp.stage === 0) {
+    const i = Math.min(lp.idx, L.phrases.length - 1);
+    coach(root, L, i, { header: head + `<div class="small">Phrase ${i + 1} of ${L.phrases.length}</div>`, onDone: () => {
+      const k = itemId(L, i); let note = "";
+      if (!S.day.learn.includes(k)) { S.day.learn.push(k); note = pay(first ? "coach" : "xCoach", !first); }
+      lp.idx = i + 1;
+      if (lp.idx >= L.phrases.length) { lp.stage = 1; lp.idx = 0; celebrate("Stage 1 done!", `You learned every phrase in <b>${esc(L.title)}</b>. Next: Talk Quests!`); }
+      save(); renderLessonTab();
+    } });
+  } else if (lp.stage === 1) {
+    const qi = Math.min(lp.idx, L.quests.length - 1);
+    const done = () => {
+      lp.idx = qi + 1;
+      if (lp.idx >= L.quests.length) { lp.stage = 2; lp.idx = 0; celebrate("Stage 2 done!", "Last stage: the Gem Check. Show what you know!"); }
+      save(); renderLessonTab();
+    };
+    done.pay = () => pay(first ? "lessonQuest" : "xQuest", !first);
+    questRun(root, L, L.quests[qi], { header: head + `<div class="small">Quest ${qi + 1} of ${L.quests.length}</div>`, onDone: done });
+  } else {
+    if (!lessonSeq || lessonSeq.lid !== L.id) lessonSeq = {
+      lid: L.id, title: "Gem Check", i: 0, retry: true,
+      steps: shuffle(L.phrases.map((_, i) => ({ t: "word", id: itemId(L, i) }))),
+      pay: (st, ft) => ft && !st.again ? pay(first ? "check" : "xWord", !first) : "",
+      onFinish: () => finishLesson(L)
+    };
+    lessonSeq.pre = head;
+    runSeq(root, lessonSeq);
+  }
+}
+function finishLesson(L) {
+  const first = !S.done.includes(L.id);
+  lessonSeq = null;
+  S.lp[L.id] = { stage: 0, idx: 0 };
+  let note;
+  if (first) {
+    S.done.push(L.id);
+    L.phrases.forEach((_, i) => { const id = itemId(L, i); if (!S.srs[id]) S.srs[id] = { b: 1, due: addDays(today(), 1) }; });
+    note = pay("lessonDone", false);
+    celebrate("LESSON COMPLETE!", `<b>${esc(L.title)}</b> is done!<br>${note}<br>Its words now show up in Daily Practice.`);
+  } else celebrate("Lesson replayed!", "Nice review!");
+  save(); renderPlayer(); renderLessonTab();
+}
+function renderReview(L, root) {
+  const quickPaid = S.day.quick.includes(L.id);
+  root.innerHTML = `<div class="panel bevel">
+      <h2>✅ ${esc(L.title)}: quick review</h2>
+      <p class="small" style="margin:0 0 10px">Everything from this lesson. Play it all through and say each phrase along with the voice${quickPaid ? "" : ` (${PAY.quick.xp} XP + ${PAY.quick.gems} ${GEM} today)`}.</p>
+      <div class="row"><button class="btn go big" id="rvAll">▶ Play all</button><button class="btn big" id="rvRedo">↺ Redo the whole lesson</button></div>
+    </div>
+    <div id="rvQuest"></div>
+    <div class="list" id="rvList">${L.phrases.map((p, i) => {
+      const k = itemId(L, i), on = recKey === k;
+      return `<article class="card bevel" id="rv-${i}">
+        <div class="num">${i + 1}</div>
+        <div class="phrase"><button class="hanzi" data-say="${esc(p.zh)}">${p.zh}</button><span class="pinyin">${pinyinHTML(p.py)}</span></div>
+        <div class="eng">${esc(p.en)}</div>
+        ${p.tip ? `<div class="tip">${esc(p.tip)}</div>` : ""}
+        <div class="actions">
+          <button class="btn sm go" data-say="${esc(p.zh)}">🔊 Listen</button>
+          <button class="btn sm" data-r="slow" data-i="${i}">🐢 Slow</button>
+          ${micAllowed ? `<button class="btn sm rec ${on ? "on" : ""}" data-r="rec" data-i="${i}">${on ? "■ Stop" : "● Record"}</button>` : ""}
+          ${micAllowed && myRecs[k] ? `<button class="btn sm" data-r="mine" data-i="${i}">▶ Me</button><button class="btn sm" data-r="cmp" data-i="${i}">⇄ Compare</button>` : ""}
+        </div></article>`; }).join("")}</div>
+    <div class="panel bevel" style="margin-top:12px"><h2>💬 Talk Quests</h2><div class="quests">${L.quests.map((q, i) => `<div class="quest bevel"><b>${esc(q.name)}</b><span class="small">${esc(q.note)}</span>
+      <div class="row"><button class="btn sm go" data-rq="${i}" data-role="S">🎒 Student</button><button class="btn sm" data-rq="${i}" data-role="T">📘 Teacher</button></div></div>`).join("")}</div></div>`;
+  drawGems();
+  root.onclick = async e => {
+    const L2 = curLesson();
+    if (e.target.closest("#rvRedo")) { S.lp[L2.id] = { stage: 0, idx: 0, redo: true }; save(); return renderLessonTab(); }
+    if (e.target.closest("#rvAll")) {
+      stopAll(); const my = token;
+      for (let i = 0; i < L2.phrases.length; i++) {
+        if (my !== token) return;
+        const c = $("rv-" + i); c.classList.add("playing"); c.scrollIntoView({ block: "center", behavior: "smooth" });
+        const d = await speak(L2.phrases[i].zh); await sleep(Math.max(1500, d * 1.4));
+        c.classList.remove("playing");
+      }
+      if (my === token && !S.day.quick.includes(L2.id)) { S.day.quick.push(L2.id); const n = pay("quick", false); celebrate("Review played!", n); renderReview(L2, root); }
+      return;
+    }
+    const rq = e.target.closest("[data-rq]");
+    if (rq) {
+      const q = L2.quests[+rq.dataset.rq], box = root.querySelector("#rvQuest");
+      const done = () => { box.innerHTML = ""; }; done.pay = () => pay("xQuest", true);
+      questRun(box, L2, q, { role: rq.dataset.role, onDone: done, doneLabel: "Close" });
+      box.scrollIntoView({ block: "start", behavior: "smooth" });
+      return;
+    }
+    const b = e.target.closest("[data-r]"); if (!b) return;
+    const i = +b.dataset.i, k = itemId(L2, i), zh = L2.phrases[i].zh;
+    if (b.dataset.r === "slow") speak(zh, { slow: true });
+    if (b.dataset.r === "rec") toggleRecord(k, () => renderReview(L2, root));
+    if (b.dataset.r === "mine") playMine(k);
+    if (b.dataset.r === "cmp") { await speak(zh); await sleep(400); await playMine(k); }
+  };
+  // quest box handles its own clicks
+  root.querySelector("#rvQuest").addEventListener("click", e => e.stopPropagation());
+}
+
+/* =========================================================
+   DAILY PRACTICE: spaced review + talk quests + tones, mixed
+   ========================================================= */
+let dailySeq = null;
+function questPool() { return doneLessons().flatMap(L => L.quests.map((q, qi) => ({ lid: L.id, qi, key: L.id + ":" + qi }))); }
+function pickQuests(n) {
+  return questPool().sort((a, b) => (S.qlast[a.key] || "").localeCompare(S.qlast[b.key] || "") || Math.random() - .5).slice(0, n);
+}
+function buildDaily() {
+  const words = shuffle(dueIds().slice(0, REVIEW_MAX)).map(id => ({ t: "word", id }));
+  const quests = pickQuests(2).map(q => ({ t: "quest", lid: q.lid, qi: q.qi, key: q.key }));
+  const tones = Array.from({ length: 4 }, () => ({ t: "tone" }));
+  const third = Math.ceil(words.length / 3) || 0;
+  const steps = [...words.slice(0, third), ...(quests[0] ? [quests[0]] : []), ...tones.slice(0, 2), ...words.slice(third, third * 2),
+    ...(quests[1] ? [quests[1]] : []), ...words.slice(third * 2), ...tones.slice(2)];
+  return steps;
+}
+function payDaily(st, ft) {
+  if (st.t === "word") { if (st.again) return ""; schedule(st.id, ft); return ft ? pay("review") : (save(), ""); }
+  if (st.t === "tone") return ft ? pay("tone") : "";
+  if (st.t === "quest") { S.qlast[st.key] = today(); return pay("dailyQuest"); }
+}
+function payExtra(st, ft) {
+  if (st.t === "word") return ft && !st.again ? pay("xWord", true) : "";
+  if (st.t === "tone") return ft ? pay("xTone", true) : "";
+  if (st.t === "quest") return pay("xQuest", true);
+}
+function bumpStreak() {
+  const t = today(); if (S.streak.last === t) return;
+  S.streak.count = S.streak.last === addDays(t, -1) ? S.streak.count + 1 : 1; S.streak.last = t;
+}
+function renderDaily() {
+  stopAll(); const root = $("dailyArea");
+  if (dailySeq) return runSeq(root, dailySeq);
+  const known = Object.values(S.srs).filter(r => r.b >= 3).length, words = Object.keys(S.srs).length;
+  const info = `<div class="info"><span>📚 ${words} words</span><span>⭐ ${known} known well</span><span>🔥 ${S.streak.count}-day streak</span></div>`;
+  if (!doneLessons().length) {
+    root.innerHTML = `<div class="stage panel bevel"><h2>Daily Practice</h2><p>Finish your first lesson to unlock Daily Practice. Its words will start coming back here to help you remember them.</p>
+      <button class="btn go big" data-d="lesson">📘 Go to Lesson</button></div>`;
+  } else if (!S.day.dailyDone) {
+    const plan = buildDaily(), nw = plan.filter(s => s.t === "word").length, nq = plan.filter(s => s.t === "quest").length;
+    root.innerHTML = `<div class="stage panel bevel"><h2>🗓 Today's practice</h2>${info}
+      <p>${nw} word${nw === 1 ? "" : "s"} to review, ${nq} talk quest${nq === 1 ? "" : "s"} and 4 tone challenges, all mixed together.</p>
+      <p class="small">Finish to keep your streak: +${PAY.dailyDone.xp} XP and +${PAY.dailyDone.gems} ${GEM} bonus.</p>
+      <button class="btn go big" data-d="start">▶ Start Daily Practice</button></div>`;
+  } else {
+    const left = EXTRA_GEM_CAP - S.day.extraGems;
+    root.innerHTML = `<div class="stage panel bevel"><h2>✅ Daily Practice done!</h2>${info}
+      <p>Want more? Extra practice still earns XP${left > 0 ? `, plus up to ${left} more ${GEM} today` : ". Gems for extras are used up today"}.</p>
+      <div class="row center"><button class="btn go big" data-d="xword">💎 10 words</button><button class="btn go big" data-d="xtone">🎵 10 tones</button></div></div>
+      <div class="panel bevel"><h2>💬 Talk Quests</h2><div class="quests">${questPool().map(q => { const L = LESSONS.find(l => l.id === q.lid), Q = L.quests[q.qi];
+        return `<div class="quest bevel"><b>${esc(Q.name)}</b><span class="small">Lesson ${LESSONS.indexOf(L) + 1} · ${esc(Q.note)}</span>
+        <div class="row"><button class="btn sm go" data-xq="${q.key}" data-role="S">🎒 Student</button><button class="btn sm" data-xq="${q.key}" data-role="T">📘 Teacher</button></div></div>`; }).join("")}</div></div>`;
+  }
+  drawGems();
+  root.onclick = e => {
+    const b = e.target.closest("[data-d],[data-xq]"); if (!b) return;
+    const d = b.dataset.d;
+    if (d === "lesson") return document.querySelector('[data-view="lesson"]').click();
+    if (d === "start") {
+      dailySeq = { title: "Daily Practice", steps: buildDaily(), i: 0, retry: true, pay: payDaily, onFinish: () => {
+        dailySeq = null; S.day.dailyDone = true; bumpStreak();
+        const n = pay("dailyDone");
+        celebrate("DAILY PRACTICE DONE!", `${n}<br>🔥 ${S.streak.count}-day streak`);
+        renderDaily();
+      } };
+      return runSeq(root, dailySeq);
+    }
+    const extra = (title, steps) => { dailySeq = { title, steps, i: 0, retry: false, pay: payExtra, onFinish: () => { dailySeq = null; celebrate("Nice work!", "Extra practice done."); renderDaily(); } }; runSeq(root, dailySeq); };
+    if (d === "xword") return extra("Extra: words", shuffle(Object.keys(S.srs).filter(getItem)).slice(0, 10).map(id => ({ t: "word", id })));
+    if (d === "xtone") return extra("Extra: tones", Array.from({ length: 10 }, () => ({ t: "tone" })));
+    if (b.dataset.xq) {
+      const [lid, qi] = b.dataset.xq.split(":"); const L = LESSONS.find(l => l.id === lid);
+      const done = () => renderDaily(); done.pay = () => pay("xQuest", true);
+      questRun(root, L, L.quests[+qi], { role: b.dataset.role, onDone: done, doneLabel: "Back" });
+    }
+  };
+}
+
+/* =========================================================
+   SHOP
+   ========================================================= */
+let shopTab = "avatars";
+function buy(kind, key, cost) {
+  if (S.gems < cost) return;
+  S.gems -= cost; S.owned[kind].push(key); save(); renderPlayer(); renderShop();
+}
+const goodVideos = () => VIDEOS.filter(v => S.vid[v.id] !== "bad");
+function renderShop() {
+  document.querySelectorAll("[data-shop]").forEach(b => b.classList.toggle("go", b.dataset.shop === shopTab));
+  let h = "";
+  if (shopTab === "avatars") {
+    h = `<p class="small" style="margin-top:0">The 12 animals of the Chinese zodiac, in the order they finished the Great Race. 2026 is the Year of the Horse 马. Tap a character to hear it.</p><div class="grid">` +
+      AVATARS.map(a => {
+        const own = S.owned.avatars.includes(a.k), cur = S.avatar === a.k;
+        return `<div class="item bevel ${own ? "" : "locked"} ${cur ? "current" : ""}">
+          <div class="bigE">${a.e}</div>
+          <div><button class="hanzi" data-say="${a.zh}">${a.zh}</button> <span class="pinyin">${pinyinHTML(a.py)}</span></div>
+          <div class="small">${a.en}</div>
+          ${cur ? `<span class="small"><b>Wearing</b></span>` : own ? `<button class="btn go" data-use="${a.k}">Use</button>`
+            : `<button class="btn buy" data-buy="avatars" data-key="${a.k}" data-cost="${a.cost}" ${S.gems < a.cost ? "disabled" : ""}>Unlock ${GEM} ${a.cost}</button>`}
+        </div>`;
+      }).join("") + `</div>`;
+  } else if (shopTab === "culture") {
+    h = `<div class="cards">` + CULTURE.map(c => S.owned.culture.includes(c.k)
+      ? `<div class="cult bevel"><h3>${esc(c.title)}</h3><div><button class="hanzi" style="font-size:1.6rem" data-say="${c.zh}">${c.zh}</button> <span class="pinyin">${pinyinHTML(c.py)}</span></div><p>${esc(c.text)}</p></div>`
+      : `<div class="cult bevel locked"><h3>🔒 ${esc(c.title)}</h3><div class="row"><button class="btn buy" data-buy="culture" data-key="${c.k}" data-cost="${c.cost}" ${S.gems < c.cost ? "disabled" : ""}>Unlock ${GEM} ${c.cost}</button></div></div>`
+    ).join("") + `</div>`;
+  } else {
+    const used = S.day.video, usedV = VIDEOS.find(v => v.id === used);
+    h = `<p class="ticket">${used ? `🎟 Today's video: ${esc(usedV ? usedV.title : "")}. New ticket tomorrow!` : "🎟 You have 1 video ticket today."}</p>
+      <p class="small">Unlock videos with gems. You can watch one video a day.</p><div class="cards">` +
+      goodVideos().map(v => {
+        const own = S.owned.videos.includes(v.id), canWatch = own && (!used || used === v.id);
+        return `<div class="vid bevel"><div><h3>${own ? "📺" : "🔒"} ${esc(v.title)}</h3><span class="small">${esc(v.by)}</span></div>
+          ${!own ? `<button class="btn buy" data-buy="videos" data-key="${v.id}" data-cost="${v.cost}" ${S.gems < v.cost ? "disabled" : ""}>Unlock ${GEM} ${v.cost}</button>`
+            : canWatch ? `<button class="btn go" data-watch="${v.id}">▶ ${used === v.id ? "Watch again" : "Watch"}</button>` : `<span class="small">Come back tomorrow</span>`}</div>`;
+      }).join("") + `</div>`;
+  }
+  $("shopBody").innerHTML = h; drawGems();
+}
+document.querySelectorAll("[data-shop]").forEach(b => b.onclick = () => { shopTab = b.dataset.shop; if (shopTab === "videos") loadYT(); renderShop(); });
+$("shopBody").addEventListener("click", e => {
+  const b = e.target.closest("[data-buy]"); if (b) return buy(b.dataset.buy, b.dataset.key, +b.dataset.cost);
+  const u = e.target.closest("[data-use]"); if (u) { S.avatar = u.dataset.use; save(); renderPlayer(); renderShop(); return; }
+  const w = e.target.closest("[data-watch]");
+  if (w) { if (S.day.video && S.day.video !== w.dataset.watch) return; S.day.video = w.dataset.watch; save(); renderShop(); openPlayer(w.dataset.watch); }
+});
+
+/* ---------- YouTube: embedded player where the page allows it ---------- */
+let yt = /^https?:$/.test(location.protocol) ? "idle" : "no";   // idle | loading | ready | no
+let ytPlayer = null, ytChecking = false;
+function loadYT() {
+  if (yt !== "idle") return;
+  yt = "loading";
+  window.onYouTubeIframeAPIReady = () => { yt = "ready"; checkVideos(); };
+  const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api";
+  s.onerror = () => { yt = "no"; };
+  document.head.appendChild(s);
+  setTimeout(() => { if (yt === "loading") yt = "no"; }, 10000);
+}
+document.addEventListener("securitypolicyviolation", e => { if (/youtube/.test(e.blockedURI || "")) yt = "no"; });
+function fallback(id, why) {
+  $("vFrame").innerHTML = `<div class="fallback">${why}<a class="btn go big" href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener">▶ Watch on YouTube</a></div>`;
+}
+// a video whose owner blocks embedding is removed, and its gems and today's ticket come back
+function dropVideo(id) {
+  if (S.vid[id] === "bad") return false;
+  S.vid[id] = "bad";
+  const v = VIDEOS.find(x => x.id === id), i = S.owned.videos.indexOf(id);
+  let refund = 0;
+  if (i >= 0 && v && v.cost) { S.owned.videos.splice(i, 1); S.gems += v.cost; refund = v.cost; }
+  if (S.day.video === id) S.day.video = "";
+  save(); renderPlayer(); if (shopTab === "videos" && !$("view-shop").hidden) renderShop();
+  return refund;
+}
+async function openPlayer(id) {
+  const v = VIDEOS.find(x => x.id === id);
+  $("vTitle").textContent = v ? v.title : ""; $("player").hidden = false;
+  loadYT();
+  for (let n = 0; n < 40 && yt === "loading"; n++) await sleep(250);
+  if (yt !== "ready") return fallback(id, "This page can't play videos inside it, so it opens on YouTube.");
+  $("vFrame").innerHTML = `<div id="ytHost"></div>`;
+  ytPlayer = new YT.Player("ytHost", {
+    host: "https://www.youtube-nocookie.com", videoId: id,
+    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, origin: location.origin },
+    events: { onError: e => {
+      if ([100, 101, 150, 153].includes(e.data)) {
+        const refund = dropVideo(id);
+        $("vFrame").innerHTML = `<div class="fallback">This video can't be played inside the app, so it's been taken out of the library.${refund ? `<br>Your ${refund} gems are back` : ""}${S.day.video ? "" : ", and you can pick another video today"}.</div>`;
+        drawGems();
+      }
+    } }
+  });
+  if (!S.vid[id]) { S.vid[id] = "ok"; save(); }
+}
+function closePlayer() { try { ytPlayer && ytPlayer.destroy(); } catch (e) {} ytPlayer = null; $("vFrame").innerHTML = ""; $("player").hidden = true; }
+$("vClose").onclick = closePlayer;
+// quietly test unchecked videos in a hidden, muted player
+async function checkVideos() {
+  if (yt !== "ready" || ytChecking) return; ytChecking = true;
+  for (const v of VIDEOS) {
+    if (S.vid[v.id]) continue;
+    const result = await new Promise(res => {
+      $("ytTest").innerHTML = `<div id="ytTestHost"></div>`;
+      let done = false; const finish = r => { if (done) return; done = true; try { p.destroy(); } catch (e) {} res(r); };
+      const p = new YT.Player("ytTestHost", { host: "https://www.youtube-nocookie.com", videoId: v.id, width: 320, height: 180,
+        playerVars: { mute: 1, playsinline: 1, origin: location.origin },
+        events: { onReady: e => { e.target.mute(); e.target.playVideo(); },
+          onStateChange: e => { if (e.data === 1 || e.data === 3) finish("ok"); },
+          onError: e => finish([100, 101, 150, 153].includes(e.data) ? "bad" : null) } });
+      setTimeout(() => finish(null), 12000);
+    });
+    if (result === "bad") dropVideo(v.id); else if (result === "ok") { S.vid[v.id] = "ok"; saveLocal(); }
+  }
+  $("ytTest").innerHTML = ""; ytChecking = false;
+}
+
+/* =========================================================
+   parent: unlock, backup
+   ========================================================= */
+let unlockArmed = false;
+$("unlockBtn").onclick = () => {
+  if (!unlockArmed) { unlockArmed = true; $("unlockBtn").textContent = "Tap again to confirm"; setTimeout(() => { unlockArmed = false; $("unlockBtn").textContent = "Unlock next lesson now"; }, 4000); return; }
+  unlockArmed = false; $("unlockBtn").textContent = "Unlock next lesson now";
+  S.bonusLessons++; checkUps(); save(); renderAll();
+};
+$("bkCopy").onclick = async () => {
+  const code = "CBQ1:" + btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  $("bkText").value = code; $("bkText").select();
+  try { await navigator.clipboard.writeText(code); $("bkMsg").textContent = "Backup code copied. Keep it somewhere safe, or paste it into the app on another device."; }
+  catch (e) { $("bkMsg").textContent = "Select the code above and copy it."; }
+};
+let restoreArmed = false;
+$("bkRestore").onclick = () => {
+  const t = $("bkText").value.trim();
+  let obj = null;
+  try { obj = JSON.parse(decodeURIComponent(escape(atob(t.replace(/^CBQ1:/, ""))))); } catch (e) {}
+  if (!obj || typeof obj !== "object" || typeof obj.xp !== "number") { $("bkMsg").textContent = "That doesn't look like a backup code. Paste the whole code, starting with CBQ1:"; return; }
+  if (!restoreArmed) { restoreArmed = true; $("bkMsg").textContent = `This will replace current progress with Level ${1 + Math.floor(obj.xp / XP_PER_LEVEL)}, ${obj.gems} gems. Press Restore again to confirm.`; setTimeout(() => restoreArmed = false, 6000); return; }
+  restoreArmed = false;
+  S = normalize(obj); startDay(); save(); renderAll(); $("bkMsg").textContent = "Progress restored!";
+};
+$("videoNote").textContent = yt === "no" && location.protocol === "file:"
+  ? "Videos can't play inside the app when it's opened as a file, so they open on YouTube."
+  : "Videos play inside the app. Any video whose owner doesn't allow that is removed automatically and its gems are refunded.";
+
+/* =========================================================
+   tabs + boot
+   ========================================================= */
+let view = "lesson";
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  stopAll(); view = t.dataset.view;
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+  ["lesson", "daily", "shop"].forEach(v => $("view-" + v).hidden = v !== view);
+  $("lessonArea").innerHTML = ""; $("dailyArea").innerHTML = "";
+  if (view === "lesson") renderLessonTab();
+  if (view === "daily") renderDaily();
+  if (view === "shop") { if (shopTab === "videos") loadYT(); renderShop(); }
+});
+function renderAll() {
+  showSlow(); setRecNote(); setSaveNote(); renderPlayer();
+  if (view === "lesson") renderLessonTab(); if (view === "daily") renderDaily(); if (view === "shop") renderShop();
+  drawGems();
+}
+startDay(); saveLocal(); renderAll();
+setInterval(() => { if (S.day.date !== today()) { startDay(); saveLocal(); renderAll(); } }, 60000);
+initRemote();
+</script>
+</body>
+</html>
