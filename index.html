@@ -729,14 +729,14 @@ function setRecNote() { $("recNote").textContent = micAllowed ? "Recordings stay
    ========================================================= */
 const STEPS = [
   { k: "listen", label: "👂 Listen" }, { k: "slow", label: "🐢 Slow" }, { k: "echo", label: "🔁 Echo" },
-  { k: "record", label: "🎙 Record" }, { k: "memory", label: "🧠 From memory" }
+  { k: "memory", label: "🧠 From memory" }
 ];
 
 // Coach: one phrase, five ways
 function coach(root, L, i, { header = "", onDone }) {
   let step = 0;
   const p = L.phrases[i], k = itemId(L, i);
-  const steps = () => STEPS.filter(s => s.k !== "record" || micAllowed);
+  const steps = () => STEPS;
   const btns = h => { root.querySelector("#cBtns").innerHTML = h; };
   const status = (t, turn) => { const el = root.querySelector("#cStatus"); el.className = "status" + (turn ? " turn" : ""); el.innerHTML = t; };
   function render(auto) {
@@ -764,11 +764,6 @@ function coach(root, L, i, { header = "", onDone }) {
     } else if (st.k === "echo") {
       status("🔁 Listen, then say it out loud when the bar fills."); btns(`<button class="btn go big" data-c="echo">▶ Start</button>`);
       if (auto) echo();
-    } else if (st.k === "record") {
-      const on = recKey === k;
-      status(on ? "🎙 Recording… say it, then press Stop." : myRecs[k] ? "Compare your voice with the teacher's." : "🎙 Press Record and say the phrase.");
-      btns(`<button class="btn rec big ${on ? "on" : ""}" data-c="rec">${on ? "■ Stop" : "● Record"}</button>
-        ${myRecs[k] && !on ? `<button class="btn big" data-c="mine">▶ Me</button><button class="btn big" data-c="cmp">⇄ Compare</button>` : ""}${next}`);
     } else {
       status(`🧠 Say it in Chinese:<br><span class="memory">“${esc(p.en)}”</span>`, true);
       btns(`<button class="btn go big" data-c="memory">▶ I'm ready</button><button class="btn big" data-c="peek">👀 Peek</button>`);
@@ -783,8 +778,16 @@ function coach(root, L, i, { header = "", onDone }) {
     if (!await fillBar(bar, Math.max(2500, dur * 1.8), my)) return;
     status("👂 Listen again. Did yours match?");
     await speak(p.zh); if (my !== token) return;
-    status("How did it go?");
-    btns(`<button class="btn big" data-c="echo">↺ Again</button><button class="btn go big" data-c="next">Next step →</button>`);
+    echoDone();
+  }
+  // after an echo: try again, optionally record yourself and compare, or move on
+  function echoDone() {
+    const on = recKey === k;
+    status(on ? "🎙 Recording… say it, then press Stop." : myRecs[k] ? "Press Compare to hear the teacher, then you." : micAllowed ? "How did it go? Record yourself to check, if you like." : "How did it go?");
+    btns(`<button class="btn big" data-c="echo">↺ Again</button>
+      ${micAllowed ? `<button class="btn rec big ${on ? "on" : ""}" data-c="rec">${on ? "■ Stop" : "● Record"}</button>` : ""}
+      ${micAllowed && myRecs[k] && !on ? `<button class="btn big" data-c="mine">▶ Me</button><button class="btn big" data-c="cmp">⇄ Compare</button>` : ""}
+      <button class="btn go big" data-c="next">Next step →</button>`);
   }
   async function memory() {
     stopAll(); const my = token; btns("");
@@ -804,7 +807,7 @@ function coach(root, L, i, { header = "", onDone }) {
     else if (c === "play") speak(p.zh);
     else if (c === "slowplay") speak(p.zh, { slow: true });
     else if (c === "echo") echo();
-    else if (c === "rec") toggleRecord(k, () => render(false));
+    else if (c === "rec") { stopAll(); toggleRecord(k, echoDone); }
     else if (c === "mine") playMine(k);
     else if (c === "cmp") (async () => { await speak(p.zh); await sleep(400); await playMine(k); })();
     else if (c === "memory") memory();
