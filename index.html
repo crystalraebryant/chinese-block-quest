@@ -890,7 +890,8 @@ const PAY = {
   quick:      { xp: 5,  gems: 1 },   // lesson play-through, once a day per lesson
   levelUp:    { gems: 5 },
   // extra practice after Daily Practice: XP always, gems until the daily cap
-  xWord: { xp: 2, gems: 1 }, xTone: { xp: 2, gems: 1 }, xQuest: { xp: 10, gems: 2 }, xCoach: { xp: 3, gems: 1 }
+  xWord: { xp: 2, gems: 0 }, xTone: { xp: 2, gems: 0 }, xQuest: { xp: 10, gems: 2 }, xCoach: { xp: 3, gems: 1 },
+  xRound: { xp: 5, gems: 5 }   // finishing a round of 10 extra words or tones
 };
 const EXTRA_GEM_CAP = Infinity;   // extra practice keeps paying gems
 const BOX_DAYS = [0, 1, 2, 4, 7, 14, 30];
@@ -1577,7 +1578,7 @@ function renderDaily() {
       <button class="btn go big" data-d="start">▶ Start Daily Practice</button></div>`;
   } else {
     root.innerHTML = `<div class="stage panel bevel"><h2>✅ Daily Practice done!</h2>${info}
-      <p>Want more? Extra practice still earns XP and ${GEM} gems.</p>
+      <p>Want more? Every answer earns XP, and each finished round of 10 earns +${PAY.xRound.gems} ${GEM}.</p>
       <div class="row center"><button class="btn go big" data-d="xword">💎 10 words</button><button class="btn go big" data-d="xtone">🎵 10 tones</button></div></div>
       <div class="panel bevel"><h2>💬 Talk Quests</h2><div class="quests">${questPool().map(q => { const L = LESSONS.find(l => l.id === q.lid), Q = L.quests[q.qi];
         return `<div class="quest bevel"><b>${esc(Q.name)}</b><span class="small">Lesson ${LESSONS.indexOf(L) + 1} · ${esc(Q.note)}</span>
@@ -1597,7 +1598,8 @@ function renderDaily() {
       } };
       return runSeq(root, dailySeq);
     }
-    const extra = (title, steps) => { dailySeq = { title, steps, i: 0, retry: false, pay: payExtra, onFinish: () => { dailySeq = null; celebrate("Nice work!", "Extra practice done."); renderDaily(); } }; runSeq(root, dailySeq); };
+    const extra = (title, steps) => { dailySeq = { title, steps, i: 0, retry: false, pay: payExtra, onFinish: () => {
+      dailySeq = null; const n = pay("xRound", true); celebrate("Round complete!", `${steps.length} done! ${n}`); renderDaily(); } }; runSeq(root, dailySeq); };
     if (d === "xword") return extra("Extra: words", shuffle(Object.keys(S.srs).filter(getItem)).slice(0, 10).map(id => ({ t: "word", id })));
     if (d === "xtone") return extra("Extra: tones", Array.from({ length: 10 }, () => ({ t: "tone" })));
     if (b.dataset.xq) {
