@@ -162,6 +162,13 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-heig
 .fallback { padding: 20px; display: grid; gap: 12px; justify-items: center; font-family: var(--display); font-size: 1.4rem; }
 #ytTest { position: fixed; left: -10000px; top: 0; width: 320px; height: 180px; }
 
+.introTitle { font-size: 3rem; margin: 0; }
+.introPhrases { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; align-items: baseline; }
+.introPhrases .hanzi { font-size: 1.7rem; cursor: default; }
+.introSteps { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; width: 100%; max-width: 640px; }
+.introSteps > div { padding: 10px 12px; display: grid; gap: 2px; }
+.introSteps b { font-family: var(--display); font-weight: 400; font-size: 1.45rem; }
+.startBtn { font-size: 2.4rem; padding: 14px 40px; margin-top: 6px; }
 details.parent { margin-top: 18px; }
 details.parent summary { font-family: var(--display); font-size: 1.4rem; cursor: pointer; }
 details.parent p { margin: 8px 0; font-size: .92rem; }
@@ -644,7 +651,7 @@ function renderPlayer() {
     ? `Lesson ${LESSONS.length + 1} is unlocked and waiting for new words.`
     : `Lesson ${lessonsUnlocked() + 1} unlocks at ${(Math.floor(S.xp / XP_PER_LESSON) + 1) * XP_PER_LESSON} XP (you have ${S.xp}).`;
 }
-$("lessonSel").onchange = e => { stopAll(); S.ui.lesson = +e.target.value; saveLocal(); renderPlayer(); renderLessonTab(); };
+$("lessonSel").onchange = e => { stopAll(); lessonGate = true; S.ui.lesson = +e.target.value; saveLocal(); renderPlayer(); renderLessonTab(); };
 
 /* =========================================================
    speech
@@ -964,10 +971,31 @@ function runSeq(root, seq) {
    LESSON TAB: first time = walkthrough, afterwards = quick review
    ========================================================= */
 let lessonSeq = null, reviewQuest = null;
+let lessonGate = true;   // show the intro screen before anything speaks
+function lessonIntro(L, lp, root) {
+  const n = LESSONS.indexOf(L) + 1, fresh = lp.stage === 0 && lp.idx === 0;
+  const where = fresh ? "" : lp.stage === 0 ? `You're on phrase ${lp.idx + 1} of ${L.phrases.length}.` : lp.stage === 1 ? `You're on Talk Quest ${lp.idx + 1} of ${L.quests.length}.` : "You're on the Gem Check.";
+  root.innerHTML = `<div class="stage panel bevel intro">
+    <div class="small">Lesson ${n}${L.source ? " · " + esc(L.source) : ""}</div>
+    <h2 class="introTitle">${esc(L.title)}</h2>
+    <div class="introPhrases">${L.phrases.slice(0, 5).map(p => `<span class="hanzi">${p.zh.replace(/[“”…！。？，：]/g, "")}</span>`).join("")}${L.phrases.length > 5 ? `<span class="small">+${L.phrases.length - 5} more</span>` : ""}</div>
+    <div class="introSteps">
+      <div class="bevel"><b>1 👂 Learn</b><span class="small">${L.phrases.length} phrases: listen, slow down, echo, then say it from memory</span></div>
+      <div class="bevel"><b>2 💬 Talk</b><span class="small">${L.quests.length} Talk Quests acting out a real class</span></div>
+      <div class="bevel"><b>3 💎 Gem Check</b><span class="small">Show what you know and earn gems</span></div>
+    </div>
+    ${where ? `<p class="status" style="font-size:1.4rem">${where}</p>` : ""}
+    <p class="small">🔊 Turn your sound on. You'll need to talk out loud!</p>
+    <button class="btn go startBtn" id="lessonGo">▶ ${fresh ? (lp.redo ? "Start again" : "Start lesson") : "Keep going"}</button>
+  </div>`;
+  root.onclick = e => { if (e.target.closest("#lessonGo")) { lessonGate = false; renderLessonTab(); } };
+  $("lessonGo").focus();
+}
 function renderLessonTab() {
   stopAll(); const L = curLesson(), root = $("lessonArea");
   const lp = S.lp[L.id] || (S.lp[L.id] = { stage: 0, idx: 0 });
   if (S.done.includes(L.id) && !lp.redo) return renderReview(L, root);
+  if (lessonGate) return lessonIntro(L, lp, root);
   const first = !S.done.includes(L.id);
   const stages = [`1. 👂 Learn the phrases`, `2. 💬 Talk Quests`, `3. 💎 Gem Check`];
   const counts = [`${Math.min(lp.idx + (lp.stage > 0 ? L.phrases.length : 0), L.phrases.length)}/${L.phrases.length}`, `${lp.stage > 1 ? L.quests.length : lp.stage === 1 ? lp.idx : 0}/${L.quests.length}`, ""];
@@ -1040,7 +1068,7 @@ function renderReview(L, root) {
   drawGems();
   root.onclick = async e => {
     const L2 = curLesson();
-    if (e.target.closest("#rvRedo")) { S.lp[L2.id] = { stage: 0, idx: 0, redo: true }; save(); return renderLessonTab(); }
+    if (e.target.closest("#rvRedo")) { S.lp[L2.id] = { stage: 0, idx: 0, redo: true }; lessonGate = true; save(); return renderLessonTab(); }
     if (e.target.closest("#rvAll")) {
       stopAll(); const my = token;
       for (let i = 0; i < L2.phrases.length; i++) {
@@ -1307,7 +1335,7 @@ document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
   document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
   ["lesson", "daily", "shop"].forEach(v => $("view-" + v).hidden = v !== view);
   $("lessonArea").innerHTML = ""; $("dailyArea").innerHTML = "";
-  if (view === "lesson") renderLessonTab();
+  if (view === "lesson") { lessonGate = true; renderLessonTab(); }
   if (view === "daily") renderDaily();
   if (view === "shop") { if (shopTab === "videos") loadYT(); renderShop(); }
 });
