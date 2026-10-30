@@ -169,6 +169,27 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-heig
 .introSteps > div { padding: 10px 12px; display: grid; gap: 2px; }
 .introSteps b { font-family: var(--display); font-weight: 400; font-size: 1.45rem; }
 .startBtn { font-size: 2.4rem; padding: 14px 40px; margin-top: 6px; }
+.pix { image-rendering: pixelated; }
+.ava .pix { width: 46px; height: 46px; }
+.bigE .avaPix { width: 56px; height: 56px; }
+.grouph { font-family: var(--display); font-weight: 400; font-size: 1.5rem; margin: 14px 0 6px; }
+.petThumb { background: #9cc9ef; border: 3px solid #000; padding: 0; cursor: zoom-in; }
+.petThumb img { width: 100%; display: block; }
+.item.notmine .petThumb img { filter: saturate(.55); }
+.petView { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.petBig { width: 100%; max-width: 432px; background: #9cc9ef; border: 3px solid #000; justify-self: center; }
+.petSide { display: grid; gap: 8px; }
+.facts { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; }
+.facts li { max-width: 60ch; }
+.lockedFact { color: var(--muted); }
+#petModal .vbox { max-height: 92vh; overflow-y: auto; }
+#mArt { display: grid; justify-items: center; gap: 6px; }
+#mArt:empty { display: none; }
+.petPop { width: 150px; height: 150px; background: #9cc9ef; border: 3px solid #000; animation: hop .6s ease-out 2; }
+.speech { background: #fff; border: 3px solid #000; padding: 6px 10px; }
+.speech .hanzi { font-size: 1.3rem; cursor: default; }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-14px); } }
+@media (max-width: 640px) { .petView { grid-template-columns: 1fr; } }
 details.parent { margin-top: 18px; }
 details.parent summary { font-family: var(--display); font-size: 1.4rem; cursor: pointer; }
 details.parent p { margin: 8px 0; font-size: .92rem; }
@@ -235,7 +256,8 @@ details.parent textarea { width: 100%; font-family: ui-monospace, monospace; fon
   <section id="view-shop" hidden>
     <div class="panel bevel">
       <div class="shoptabs">
-        <button class="btn" data-shop="avatars">🐉 Avatars</button>
+        <button class="btn" data-shop="avatars">🙂 Avatars</button>
+        <button class="btn" data-shop="pets">🐉 Pets</button>
         <button class="btn" data-shop="culture">📜 Culture Cards</button>
         <button class="btn" data-shop="videos">📺 Videos</button>
       </div>
@@ -262,9 +284,11 @@ details.parent textarea { width: 100%; font-family: ui-monospace, monospace; fon
     <div class="vframe" id="vFrame"></div>
   </div>
 </div>
+<div class="modal" id="petModal" hidden><div class="vbox bevel" id="petBox" role="dialog" aria-modal="true"></div></div>
 <div class="modal" id="modal" hidden>
   <div class="box bevel" role="dialog" aria-modal="true" aria-labelledby="mTitle">
     <div class="title" id="mTitle"></div>
+    <div id="mArt"></div>
     <div class="msg" id="mMsg"></div>
     <button class="btn go big" id="mOk">OK</button>
   </div>
@@ -388,21 +412,53 @@ const TONE_SETS = [
 ].map(([f, c]) => ({ forms: f.split(" "), chars: [...c].map(x => x === "-" ? null : x) }));
 
 
+const AVATAR_COST = 10;
 const AVATARS = [
-  { k: "panda", e: "🐼", zh: "熊猫", py: "xióng'māo", en: "Panda", cost: 0 },
-  { k: "rat", e: "🐭", zh: "鼠", py: "shǔ", en: "Rat", cost: 10 },
-  { k: "ox", e: "🐮", zh: "牛", py: "niú", en: "Ox", cost: 10 },
-  { k: "tiger", e: "🐯", zh: "虎", py: "hǔ", en: "Tiger", cost: 15 },
-  { k: "rabbit", e: "🐰", zh: "兔", py: "tù", en: "Rabbit", cost: 15 },
-  { k: "dragon", e: "🐲", zh: "龙", py: "lóng", en: "Dragon", cost: 30 },
-  { k: "snake", e: "🐍", zh: "蛇", py: "shé", en: "Snake", cost: 15 },
-  { k: "horse", e: "🐴", zh: "马", py: "mǎ", en: "Horse", cost: 20 },
-  { k: "goat", e: "🐐", zh: "羊", py: "yáng", en: "Goat", cost: 15 },
-  { k: "monkey", e: "🐵", zh: "猴", py: "hóu", en: "Monkey", cost: 20 },
-  { k: "rooster", e: "🐔", zh: "鸡", py: "jī", en: "Rooster", cost: 15 },
-  { k: "dog", e: "🐶", zh: "狗", py: "gǒu", en: "Dog", cost: 15 },
-  { k: "pig", e: "🐷", zh: "猪", py: "zhū", en: "Pig", cost: 15 }
-];
+  { k: "panda", e: "🐼", zh: "熊猫", py: "xióng'māo", en: "Panda", cost: 0, group: "start" },
+  // the 12 zodiac animals, in Great Race order
+  { k: "rat", e: "🐭", zh: "鼠", py: "shǔ", en: "Rat", group: "zodiac" },
+  { k: "ox", e: "🐮", zh: "牛", py: "niú", en: "Ox", group: "zodiac" },
+  { k: "tiger", e: "🐯", zh: "虎", py: "hǔ", en: "Tiger", group: "zodiac" },
+  { k: "rabbit", e: "🐰", zh: "兔", py: "tù", en: "Rabbit", group: "zodiac" },
+  { k: "dragon", e: "🐲", zh: "龙", py: "lóng", en: "Dragon", group: "zodiac" },
+  { k: "snake", e: "🐍", zh: "蛇", py: "shé", en: "Snake", group: "zodiac" },
+  { k: "horse", e: "🐴", zh: "马", py: "mǎ", en: "Horse", group: "zodiac" },
+  { k: "goat", e: "🐐", zh: "羊", py: "yáng", en: "Goat", group: "zodiac" },
+  { k: "monkey", e: "🐵", zh: "猴", py: "hóu", en: "Monkey", group: "zodiac" },
+  { k: "rooster", e: "🐔", zh: "鸡", py: "jī", en: "Rooster", group: "zodiac" },
+  { k: "dog", e: "🐶", zh: "狗", py: "gǒu", en: "Dog", group: "zodiac" },
+  { k: "pig", e: "🐷", zh: "猪", py: "zhū", en: "Pig", group: "zodiac" },
+  // dinosaurs
+  { k: "trex", e: "🦖", zh: "霸王龙", py: "bà'wáng'lóng", en: "T. rex", group: "dino" },
+  { k: "brachio", e: "🦕", zh: "腕龙", py: "wàn'lóng", en: "Brachiosaurus", group: "dino" },
+  { k: "trike", art: "triceratops", zh: "三角龙", py: "sān'jiǎo'lóng", en: "Triceratops", group: "dino" },
+  { k: "stego", art: "stegosaurus", zh: "剑龙", py: "jiàn'lóng", en: "Stegosaurus", group: "dino" },
+  { k: "ptero", art: "pterosaur", zh: "翼龙", py: "yì'lóng", en: "Pterosaur", group: "dino" },
+  // myths, sea and space
+  { k: "phoenixA", e: "🐦‍🔥", zh: "凤凰", py: "fèng'huáng", en: "Phoenix", group: "myth" },
+  { k: "unicorn", e: "🦄", zh: "独角兽", py: "dú'jiǎo'shòu", en: "Unicorn", group: "myth" },
+  { k: "mermaid", e: "🧜", zh: "美人鱼", py: "měi'rén'yú", en: "Mermaid", group: "myth" },
+  { k: "kraken", e: "🦑", zh: "海怪", py: "hǎi'guài", en: "Sea monster", group: "myth" },
+  { k: "whale", e: "🐋", zh: "鲸鱼", py: "jīng'yú", en: "Whale", group: "myth" },
+  { k: "shark", e: "🦈", zh: "鲨鱼", py: "shā'yú", en: "Shark", group: "myth" },
+  { k: "alien", e: "👽", zh: "外星人", py: "wài'xīng'rén", en: "Alien", group: "myth" },
+  { k: "robot", e: "🤖", zh: "机器人", py: "jī'qì'rén", en: "Robot", group: "myth" },
+  // more animals
+  { k: "lion", e: "🦁", zh: "狮子", py: "shī'zi", en: "Lion", group: "animal" },
+  { k: "fox", e: "🦊", zh: "狐狸", py: "hú'li", en: "Fox", group: "animal" },
+  { k: "owl", e: "🦉", zh: "猫头鹰", py: "māo'tóu'yīng", en: "Owl", group: "animal" },
+  { k: "penguin", e: "🐧", zh: "企鹅", py: "qǐ'é", en: "Penguin", group: "animal" },
+  // adventure gear (original pixel art)
+  { k: "sword", art: "sword", zh: "剑", py: "jiàn", en: "Sword", group: "gear" },
+  { k: "pickaxe", art: "pickaxe", zh: "镐", py: "gǎo", en: "Pickaxe", group: "gear" },
+  { k: "shield", art: "shield", zh: "盾", py: "dùn", en: "Shield", group: "gear" },
+  { k: "chest", art: "chest", zh: "宝箱", py: "bǎo'xiāng", en: "Treasure chest", group: "gear" },
+  { k: "torch", art: "torch", zh: "火把", py: "huǒ'bǎ", en: "Torch", group: "gear" },
+  { k: "compass", art: "compass", zh: "指南针", py: "zhǐ'nán'zhēn", en: "Compass (a Chinese invention!)", group: "gear" },
+  { k: "potion", art: "potion", zh: "药水", py: "yào'shuǐ", en: "Potion", group: "gear" },
+  { k: "lantern", art: "lantern", zh: "灯笼", py: "dēng'long", en: "Lantern", group: "gear" }
+].map(a => Object.assign({ cost: AVATAR_COST }, a));
+const AVATAR_GROUPS = [["start", "Starter"], ["zodiac", "Zodiac animals (in Great Race order)"], ["dino", "Dinosaurs"], ["myth", "Myths, sea and space"], ["animal", "More animals"], ["gear", "Adventure gear"]];
 
 const CULTURE = [
   { k: "tones", cost: 5, title: "Four tones, four words", zh: "妈，麻，马，骂", py: "mā, má, mǎ, mà",
@@ -451,6 +507,372 @@ const VIDEOS = [
 ];
 
 
+
+/* ---------- pixel-art pets, drawn in code on a 48x48 grid ---------- */
+const PET_N = 48;
+function petGrid() {
+  const g = Array.from({ length: PET_N }, () => Array(PET_N).fill(null));
+  const set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < PET_N && y < PET_N) g[y][x] = c; };
+  const api = {
+    g, set,
+    rect(x, y, w, h, c) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) set(x + i, y + j, c); },
+    ell(cx, cy, rx, ry, c) {
+      for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++)
+        if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) set(x, y, c);
+    },
+    poly(pts, c) {
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++)
+        for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x++) {
+          let inside = false;
+          for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+            const [xi, yi] = pts[i], [xj, yj] = pts[j];
+            if ((yi > y + .5) !== (yj > y + .5) && x + .5 < (xj - xi) * (y + .5 - yi) / (yj - yi) + xi) inside = !inside;
+          }
+          if (inside) set(x, y, c);
+        }
+    },
+    line(x0, y0, x1, y1, c, t = 0) {
+      const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2 + 1;
+      for (let k = 0; k <= n; k++) { const x = x0 + (x1 - x0) * k / n, y = y0 + (y1 - y0) * k / n; t ? api.ell(x, y, t, t, c) : set(x, y, c); }
+    },
+    // thick path through points, radius r0 -> r1
+    path(pts, r0, r1, c) {
+      const total = pts.length - 1;
+      for (let i = 0; i < total; i++) {
+        const [ax, ay] = pts[i], [bx, by] = pts[i + 1], steps = 8;
+        for (let s = 0; s <= steps; s++) { const f = (i + s / steps) / total; api.ell(ax + (bx - ax) * s / steps, ay + (by - ay) * s / steps, r0 + (r1 - r0) * f, r0 + (r1 - r0) * f, c); }
+      }
+    }
+  };
+  return api;
+}
+function petCanvas(draw, scale) {
+  const P = petGrid(); draw(P);
+  // automatic dark outline around every shape
+  const out = P.g.map(r => r.slice());
+  for (let y = 0; y < PET_N; y++) for (let x = 0; x < PET_N; x++) if (!P.g[y][x]) {
+    if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => P.g[y + dy] && P.g[y + dy][x + dx] && P.g[y + dy][x + dx] !== "#none")) out[y][x] = "#1b1b1f";
+  }
+  const c = document.createElement("canvas"); c.width = c.height = PET_N;
+  const x = c.getContext("2d");
+  for (let j = 0; j < PET_N; j++) for (let i = 0; i < PET_N; i++) if (out[j][i]) { x.fillStyle = out[j][i]; x.fillRect(i, j, 1, 1); }
+  c.className = "petArt"; if (scale) c.style.width = c.style.height = scale + "px";
+  return c;
+}
+const curve = (n, f) => Array.from({ length: n + 1 }, (_, i) => f(i / n));
+
+const PET_ART = {
+  dragon(P) {
+    const G = "#3fae5a", D = "#2a7d3f", Y = "#f2c84b", R = "#d9372b", W = "#f4f1e6";
+    // cloud
+    P.ell(14, 41, 9, 4, "#e8eef5"); P.ell(24, 42, 8, 4, "#e8eef5"); P.ell(33, 41, 7, 3, "#e8eef5");
+    const body = curve(16, t => [4 + t * 25, 28 - 8 * Math.sin(t * Math.PI * 2) - t * 6]);
+    // spikes along the back
+    body.forEach(([x, y], i) => { if (i % 2 === 0 && i > 1) P.poly([[x - 2, y - 2], [x + 2, y - 2], [x, y - 6]], R); });
+    P.path(body, 2, 5, G);
+    // belly stripe
+    P.path(body.map(([x, y]) => [x, y + 2]), 1, 2, Y);
+    // legs with claws
+    for (const [i, dir] of [[5, 1], [12, 1]]) { const [x, y] = body[i]; P.line(x, y + 3, x + 2 * dir, y + 8, D, 1); P.line(x + 2 * dir, y + 8, x + 4 * dir, y + 9, Y); P.set(x + 1, y + 9, Y); }
+    // tail tuft
+    P.poly([[2, 26], [0, 22], [5, 25], [2, 30]], R);
+    // head
+    const [hx, hy] = body[body.length - 1];
+    P.ell(hx + 3, hy - 2, 6, 5, G);
+    P.rect(hx + 5, hy - 2, 7, 4, G); P.rect(hx + 6, hy + 1, 6, 2, Y);     // snout + jaw
+    P.ell(hx + 1, hy - 1, 4, 5, R);                                        // mane behind head
+    P.ell(hx + 3, hy - 2, 5, 4, G);
+    P.line(hx + 1, hy - 6, hx - 3, hy - 12, Y); P.line(hx - 1, hy - 9, hx + 1, hy - 12, Y);   // antlers
+    P.line(hx + 4, hy - 6, hx + 2, hy - 11, Y);
+    P.rect(hx + 4, hy - 4, 2, 2, W); P.set(hx + 5, hy - 4, "#1b1b1f");     // eye
+    P.line(hx + 11, hy, hx + 16, hy + 6, W); P.line(hx + 11, hy - 1, hx + 15, hy - 5, W);   // whiskers
+    P.set(hx + 11, hy - 2, D);
+    // flaming pearl
+    P.ell(41, 34, 3, 3, "#f9f3d2"); P.poly([[38, 33], [40, 28], [41, 31], [43, 27], [44, 33]], "#f08a24"); P.ell(41, 34, 2, 2, "#fffbe8");
+  },
+  phoenix(P) {
+    const R = "#d9372b", O = "#f08a24", Y = "#f2c84b", B = "#2f6fc9", P2 = "#8e3bb5";
+    // long tail plumes
+    const tails = [[R, 0], [O, 4], [P2, 8], [B, 12]];
+    for (const [c, k] of tails) {
+      const pts = curve(10, t => [22 - t * (20 - k / 2), 30 + t * (k * 1.1) - Math.sin(t * Math.PI) * (4 - k / 4) + Math.sin(t * Math.PI * 2) * 2]);
+      P.path(pts, 1.5, 1, c);
+      const [ex, ey] = pts[pts.length - 1]; P.ell(ex, ey, 2, 2, c); P.set(ex, ey, Y);
+    }
+    // wings raised
+    P.poly([[20, 26], [12, 6], [18, 10], [22, 4], [25, 12], [30, 8], [30, 24]], R);
+    P.poly([[22, 24], [16, 10], [21, 13], [24, 8], [26, 15], [29, 13], [29, 23]], O);
+    P.poly([[24, 22], [21, 14], [25, 17], [28, 16], [28, 22]], Y);
+    // body + neck + head
+    P.ell(28, 28, 8, 6, R);
+    P.ell(28, 30, 6, 3, O);
+    P.path([[32, 25], [36, 20], [37, 15]], 2.5, 2, R);
+    P.ell(38, 13, 3.5, 3, R);
+    P.poly([[40, 12], [45, 14], [40, 15]], Y);                       // beak
+    P.set(38, 12, "#fff"); P.set(39, 12, "#1b1b1f");
+    // crest
+    P.line(36, 11, 33, 5, Y); P.line(37, 10, 36, 4, O); P.line(38, 10, 39, 5, Y);
+    P.set(33, 5, B); P.set(36, 4, B); P.set(39, 5, B);
+    // legs
+    P.line(27, 34, 26, 39, Y); P.line(30, 34, 31, 39, Y); P.line(25, 39, 28, 39, Y); P.line(30, 39, 33, 39, Y);
+  },
+  qilin(P) {
+    const T = "#3aa7a0", Td = "#257a75", Y = "#f2c84b", R = "#e0452f", O = "#f39a2b", W = "#f4f1e6";
+    P.ell(14, 43, 9, 3, "#e8eef5"); P.ell(32, 43, 9, 3, "#e8eef5");
+    // flame mane + tail
+    P.poly([[5, 22], [1, 14], [6, 18], [5, 11], [10, 19], [11, 24]], R);
+    P.poly([[6, 21], [4, 16], [8, 19], [9, 23]], O);
+    // body
+    P.ell(20, 26, 12, 7, T);
+    // scales
+    for (let y = 22; y <= 29; y += 3) for (let x = 12 + (y % 2) * 2; x <= 28; x += 4) { P.set(x, y, Td); P.set(x + 1, y + 1, Td); }
+    P.ell(20, 30, 9, 2, Y);                                           // belly
+    // legs + hooves
+    for (const x of [10, 16, 24, 30]) { P.rect(x, 30, 4, 10, T); P.rect(x, 30, 1, 9, Td); P.rect(x, 39, 4, 2, "#5a4636"); }
+    // neck + head
+    P.poly([[27, 22], [32, 12], [37, 14], [34, 26]], T);
+    P.ell(37, 12, 5, 4, T);
+    P.rect(38, 12, 7, 4, T); P.rect(40, 15, 5, 1, Y);
+    P.set(38, 10, W); P.set(39, 10, "#1b1b1f");
+    // horn + ears
+    P.line(36, 8, 35, 2, Y); P.line(36, 8, 37, 4, Y);
+    P.poly([[33, 9], [31, 6], [34, 8]], Td);
+    // flame mane along the neck
+    P.poly([[30, 13], [27, 8], [31, 10], [30, 5], [34, 9], [33, 4], [36, 9], [31, 18]], R);
+    P.poly([[31, 13], [30, 9], [33, 11], [33, 7], [35, 10], [32, 16]], O);
+    // beard
+    P.poly([[41, 16], [43, 16], [42, 20]], R);
+  },
+  pixiu(P) {
+    const G = "#e2b13c", Gd = "#b07f1f", W = "#f4f1e6", R = "#d9372b", Bl = "#4a7bd1";
+    // wings
+    P.poly([[12, 22], [3, 10], [9, 13], [6, 6], [13, 12], [13, 4], [18, 14], [18, 24]], Bl);
+    P.poly([[13, 21], [7, 12], [11, 15], [11, 9], [15, 15], [16, 22]], "#7aa3ea");
+    // body (sitting) + legs
+    P.ell(20, 30, 10, 9, G);
+    P.ell(17, 33, 6, 5, Gd);                                          // haunch
+    P.rect(25, 32, 4, 9, G); P.rect(30, 32, 4, 9, G);                // front legs
+    P.rect(24, 40, 6, 2, Gd); P.rect(29, 40, 6, 2, Gd);
+    P.rect(10, 38, 12, 3, G); P.rect(9, 40, 7, 2, Gd);                // back paw
+    // curly tail
+    P.path(curve(8, t => [9 - Math.sin(t * Math.PI) * 6, 30 - t * 12]), 2, 1.5, Gd);
+    P.ell(5, 17, 2, 2, Gd);
+    // head with curly mane
+    for (const [x, y] of [[26, 12], [22, 15], [23, 21], [27, 23], [32, 23], [30, 10]]) P.ell(x, y, 4, 4, Gd);
+    P.ell(30, 17, 7, 7, G);
+    P.rect(33, 16, 7, 6, G);                                          // snout
+    P.rect(34, 21, 6, 2, R); P.set(35, 21, W); P.set(37, 21, W); P.set(39, 21, W);   // mouth + teeth
+    P.ell(31, 14, 2, 2, W); P.set(32, 14, "#1b1b1f");                 // eye
+    P.line(31, 12, 34, 13, "#1b1b1f");                                // brow
+    P.line(29, 10, 32, 3, Bl, 0.6); P.set(32, 3, W);                  // horn
+    P.set(39, 17, Gd);                                                // nose
+    // gold coin
+    P.ell(41, 37, 4, 4, "#f7d75a"); P.rect(40, 36, 3, 3, Gd); P.set(41, 37, "#f7d75a");
+  },
+  tortoise(P) {
+    const S = "#2c3b3f", Sh = "#46606a", Sk = "#6f9a63", Sn = "#3fae8f", Snd = "#2a7d6a", Y = "#f2c84b";
+    P.ell(24, 42, 18, 3, "#9fb7c9");                                  // water
+    // legs + head + tail of the tortoise
+    for (const x of [12, 18, 30, 36]) P.ell(x, 36, 3, 4, Sk);
+    P.ell(40, 31, 5, 4, Sk); P.set(41, 29, "#fff"); P.set(42, 29, "#1b1b1f"); P.line(42, 32, 44, 32, "#1b1b1f");
+    P.poly([[7, 33], [3, 34], [7, 35]], Sk);
+    // shell
+    P.ell(24, 30, 15, 9, S);
+    P.ell(24, 34, 15, 4, Sh);
+    for (const [x, y] of [[17, 26], [24, 24], [31, 26], [20, 31], [28, 31]]) {
+      P.poly([[x - 3, y], [x - 1, y - 2], [x + 2, y - 2], [x + 3, y], [x + 2, y + 2], [x - 1, y + 2]], Sh);
+    }
+    // the snake coiled over the shell
+    P.path(curve(16, t => [8 + t * 30, 26 - Math.sin(t * Math.PI * 2) * 6 - t * 6]), 2, 2, Sn);
+    P.path(curve(16, t => [8 + t * 30, 27 - Math.sin(t * Math.PI * 2) * 6 - t * 6]), 0.6, 0.6, Snd);
+    P.ell(38, 13, 4, 3, Sn);
+    P.set(38, 12, "#fff"); P.set(39, 12, "#1b1b1f");
+    P.line(41, 14, 44, 15, "#d9372b"); P.set(45, 14, "#d9372b"); P.set(45, 16, "#d9372b");   // tongue
+    P.ell(8, 26, 2, 2, Sn);
+    // little moon
+    P.ell(8, 8, 4, 4, Y); P.ell(10, 7, 3.5, 3.5, null);
+  },
+  nian(P) {
+    const R = "#cf3a2a", Rd = "#8f2418", O = "#f39a2b", W = "#f4f1e6", Y = "#f2c84b";
+    // tail
+    P.path(curve(8, t => [8 - t * 5, 28 - t * 10]), 2, 1, Rd); P.ell(3, 17, 3, 3, O);
+    // body + legs
+    P.ell(20, 29, 13, 9, R);
+    P.ell(20, 33, 10, 4, O);
+    for (const x of [9, 15, 25, 31]) { P.rect(x, 34, 5, 8, R); P.rect(x - 1, 41, 7, 2, Rd); P.set(x, 42, W); P.set(x + 2, 42, W); P.set(x + 4, 42, W); }
+    // spiky back
+    for (let x = 10; x <= 28; x += 4) P.poly([[x, 22], [x + 2, 15], [x + 4, 22]], O);
+    // big head
+    P.ell(36, 22, 10, 9, R);
+    P.ell(30, 20, 5, 7, Rd);                                         // mane shadow
+    P.ell(36, 22, 9, 8, R);
+    // horn
+    P.poly([[34, 15], [37, 3], [40, 15]], Y); P.line(36, 10, 39, 10, "#c99a2e"); P.line(35, 13, 39, 13, "#c99a2e");
+    // eyes + brows
+    P.ell(34, 19, 2, 2, W); P.ell(40, 19, 2, 2, W); P.set(35, 19, "#1b1b1f"); P.set(41, 19, "#1b1b1f");
+    P.line(32, 16, 36, 17, "#1b1b1f"); P.line(42, 16, 38, 17, "#1b1b1f");
+    // grin with fangs
+    P.rect(32, 25, 11, 4, "#5a1410");
+    for (let x = 32; x <= 42; x += 2) P.set(x, 25, W);
+    P.set(33, 28, W); P.set(41, 28, W);
+    // firecracker it's scared of
+    P.rect(4, 34, 3, 8, "#d9372b"); P.rect(4, 36, 3, 1, Y); P.line(5, 33, 3, 30, "#5a4636"); P.set(2, 29, O); P.set(3, 28, Y);
+  }
+};
+
+const DINO_ART = {
+  triceratops(P) {
+    const G = "#6aa84f", Gd = "#4a7f35", O = "#e69138", W = "#f4f1e6";
+    P.path(curve(6, t => [12 - t * 9, 28 + t * 4]), 4, 1, G);        // tail
+    P.ell(20, 27, 11, 8, G); P.ell(20, 31, 9, 3, "#93c47d");
+    for (const x of [11, 16, 23, 28]) { P.rect(x, 31, 4, 9, G); P.rect(x, 31, 1, 8, Gd); P.rect(x, 39, 4, 2, "#5a4636"); }
+    P.ell(31, 20, 7, 10, O);                                          // frill
+    for (const [x, y] of [[26, 12], [31, 10], [36, 12]]) P.ell(x, y, 2, 2, "#c2701f");
+    P.ell(35, 25, 7, 5, G);                                           // head
+    P.poly([[40, 24], [46, 26], [41, 29]], "#cfc7a6");                // beak
+    P.line(36, 21, 44, 15, W); P.line(37, 21, 43, 16, W);             // brow horns
+    P.line(40, 23, 43, 20, W);                                        // nose horn
+    P.set(36, 23, "#fff"); P.set(37, 23, "#1b1b1f");
+  },
+  stegosaurus(P) {
+    const G = "#7aa8c4", Gd = "#4f7f9c", O = "#e06a3c", W = "#f4f1e6";
+    for (const [x, h] of [[11, 7], [16, 9], [21, 10], [26, 9], [31, 7]]) P.poly([[x - 3, 24], [x, 24 - h - 4], [x + 3, 24]], O);   // back plates
+    P.path(curve(8, t => [12 - t * 10, 30 - t * 2]), 4, 1.5, G);      // tail
+    P.line(3, 27, 0, 22, W); P.line(5, 27, 3, 21, W); P.line(3, 29, 0, 33, W);   // tail spikes
+    P.ell(21, 30, 13, 7, G); P.ell(21, 34, 11, 3, "#a9cde0");
+    for (const x of [11, 17, 25, 30]) { P.rect(x, 33, 4, 8, G); P.rect(x, 33, 1, 7, Gd); P.rect(x, 40, 4, 2, "#5a4636"); }
+    P.path([[32, 30], [37, 30], [41, 31]], 3, 2.5, G);               // neck + head
+    P.ell(42, 31, 4, 3, G); P.set(42, 30, "#fff"); P.set(43, 30, "#1b1b1f");
+  },
+  pterosaur(P) {
+    const B = "#b07d5b", Bd = "#8a5a3c", M = "#d9a079", R = "#d9372b";
+    P.poly([[22, 24], [1, 14], [6, 22], [3, 30], [20, 30]], M);       // wings
+    P.poly([[26, 24], [47, 14], [42, 22], [45, 30], [28, 30]], M);
+    P.line(22, 24, 1, 14, Bd); P.line(26, 24, 47, 14, Bd);
+    P.ell(24, 27, 4, 7, B);                                           // body
+    P.ell(24, 17, 4, 4, B);                                           // head
+    P.poly([[26, 16], [36, 19], [26, 19]], "#e8c25a");                // long beak
+    P.poly([[21, 15], [12, 9], [22, 13]], R);                         // crest
+    P.set(25, 16, "#fff"); P.set(26, 16, "#1b1b1f");
+    P.line(22, 34, 21, 38, Bd); P.line(26, 34, 27, 38, Bd);
+  }
+};
+
+const ITEM_ART = {
+  sword(P) {
+    const S = "#c9d3dc", Sd = "#8c99a6", Gd = "#e2b13c", Br = "#7a4b2a";
+    P.line(14, 34, 38, 10, S, 1.6); P.line(15, 33, 38, 10, "#eef3f7");   // blade + shine
+    P.poly([[36, 8], [41, 7], [40, 12]], S);                              // tip
+    P.line(9, 29, 19, 39, Gd, 1.3);                                       // cross-guard
+    P.line(13, 35, 7, 41, Br, 1.4);                                       // grip
+    P.ell(6, 42, 2.2, 2.2, Gd);                                           // pommel
+    P.line(16, 32, 36, 12, Sd);
+  },
+  pickaxe(P) {
+    const Br = "#8a5a3c", I = "#9aa5b1", Il = "#d5dde4";
+    P.line(12, 40, 34, 14, Br, 1.6);
+    P.path(curve(10, t => [14 + t * 30, 18 - Math.sin(t * Math.PI) * 10 + t * 4]), 2.2, 1.2, I);
+    P.path(curve(10, t => [16 + t * 26, 16 - Math.sin(t * Math.PI) * 9 + t * 4]), 0.6, 0.4, Il);
+  },
+  shield(P) {
+    const R = "#c0392b", G = "#e2b13c";
+    P.poly([[8, 6], [40, 6], [40, 22], [24, 44], [8, 22]], G);
+    P.poly([[11, 9], [37, 9], [37, 22], [24, 40], [11, 22]], R);
+    P.rect(22, 9, 4, 30, G); P.rect(11, 18, 26, 4, G);
+    P.ell(24, 20, 4, 4, "#f7d75a");
+  },
+  chest(P) {
+    const W = "#8a5a3c", Wd = "#6b4228", G = "#e2b13c";
+    P.rect(6, 22, 36, 18, W);
+    P.ell(24, 22, 18, 8, W); P.rect(6, 22, 36, 2, Wd);
+    for (const y of [27, 33]) P.rect(6, y, 36, 1, Wd);
+    P.rect(6, 15, 3, 25, G); P.rect(39, 15, 3, 25, G); P.rect(6, 22, 36, 2, G);
+    P.rect(21, 20, 6, 8, G); P.rect(23, 23, 2, 3, "#1b1b1f");
+    P.ell(16, 16, 2, 2, "#41e07a"); P.ell(30, 15, 2, 2, "#f2c84b");      // treasure peeking out
+  },
+  torch(P) {
+    P.line(24, 44, 24, 20, "#7a4b2a", 2);
+    P.rect(21, 19, 7, 3, "#5a4636");
+    P.ell(24, 13, 6, 8, "#e0452f"); P.ell(24, 15, 4, 6, "#f39a2b"); P.ell(24, 17, 2, 3, "#f7e27a");
+    P.set(19, 7, "#f39a2b"); P.set(29, 5, "#f39a2b"); P.set(27, 2, "#e0452f");
+  },
+  compass(P) {
+    P.ell(24, 25, 17, 17, "#e2b13c"); P.ell(24, 25, 14, 14, "#f4f1e6");
+    P.rect(22, 5, 4, 4, "#e2b13c");
+    for (const [x, y] of [[24, 13], [36, 25], [24, 37], [12, 25]]) P.set(x, y, "#1b1b1f");
+    P.poly([[24, 25], [22, 23], [31, 15], [26, 27]], "#c0392b");       // needle
+    P.poly([[24, 25], [26, 27], [17, 35], [22, 23]], "#5a6b78");
+    P.ell(24, 25, 1.5, 1.5, "#e2b13c");
+  },
+  potion(P) {
+    P.rect(20, 6, 8, 5, "#b07d5b");                                        // cork
+    P.rect(21, 11, 6, 7, "#cfe7f2");                                       // neck
+    P.ell(24, 30, 13, 13, "#cfe7f2");                                      // glass
+    P.ell(24, 33, 11, 10, "#8e3bb5"); P.rect(13, 23, 22, 6, "#cfe7f2");     // liquid
+    P.ell(24, 29, 11, 2, "#b56ad8");
+    for (const [x, y, r] of [[19, 35, 1.5], [27, 38, 1], [29, 33, 1.5]]) P.ell(x, y, r, r, "#d9a6f0");
+    P.line(16, 22, 15, 28, "#ffffff");
+  },
+  lantern(P) {
+    const R = "#d9372b", Rd = "#a3261c", G = "#e2b13c";
+    P.line(24, 2, 24, 8, "#1b1b1f");
+    P.rect(17, 8, 14, 4, G);
+    P.ell(24, 24, 16, 13, R);
+    for (const x of [14, 19, 24, 29, 34]) P.line(x, 13, x, 35, Rd);
+    P.ell(24, 24, 5, 5, "#f39a2b");
+    P.rect(17, 36, 14, 4, G);
+    for (const x of [21, 24, 27]) P.line(x, 40, x, 47, R);
+  }
+};
+
+const PET_COST = 30, FACT_COST = 5;
+const PETS = [
+  { k: "dragon", zh: "龙", py: "lóng", name: "Lóng, the Chinese dragon", facts: [
+    "Chinese dragons usually have no wings. They fly by magic and ride on the clouds.",
+    "Dragons were believed to control water and bring the rain. Dragon Kings were said to rule the four seas.",
+    "An old description says a dragon is made from nine animals, including a camel's head, a deer's antlers, a snake's neck, a carp's scales and an eagle's claws.",
+    "Long ago the dragon was the emperor's symbol, and dragons with five claws were saved for the emperor alone.",
+    "The dragon is the only mythical animal in the 12-animal zodiac. Dragons are often drawn chasing a flaming pearl." ] },
+  { k: "phoenix", zh: "凤凰", py: "fèng'huáng", name: "Fènghuáng, the Chinese phoenix", facts: [
+    "Its name joins two words: 凤 (fèng) for the male bird and 凰 (huáng) for the female.",
+    "People said a phoenix only appears in times of peace, when the land is ruled well.",
+    "Its feathers have five colours, which were linked to five good qualities, like kindness and honesty.",
+    "Legend says it will only rest on one kind of tree, the wutong tree (梧桐).",
+    "A dragon and a phoenix together stand for a happy marriage, so you'll see them at Chinese weddings. Unlike the Western phoenix, it isn't usually said to burn up and be reborn." ] },
+  { k: "qilin", zh: "麒麟", py: "qí'lín", name: "Qílín, the gentle beast", facts: [
+    "The qilin is so gentle that it's said to walk without bending the grass or stepping on a single bug.",
+    "A qilin is said to appear when a great, wise person is born. Legend says one appeared before Confucius was born.",
+    "It has hooves like a deer and scales like a dragon. It's often wrapped in flames, with a horn or antlers on its head.",
+    "In 1414 a giraffe was brought to the emperor's court, and people called it a qilin! The Japanese and Korean words for giraffe still come from “qilin.”",
+    "People hang pictures of a qilin carrying a baby to wish for a happy family." ] },
+  { k: "pixiu", zh: "貔貅", py: "pí'xiū", name: "Píxiū, the treasure guardian", facts: [
+    "A pixiu looks like a lion with wings and a horn.",
+    "In stories it loves to eat gold, silver and jewels, and it never lets any of its treasure go.",
+    "Because of that, people keep pixiu figures in shops and homes to wish for good luck with money.",
+    "Pixiu are fierce guardians, said to chase away bad luck and evil spirits.",
+    "An old legend says the Yellow Emperor, a hero of ancient China, brought pixiu into battle with his army." ] },
+  { k: "tortoise", zh: "玄武", py: "Xuán'wǔ", name: "Xuánwǔ, the Black Tortoise", facts: [
+    "Xuánwǔ is one of the Four Symbols, the guardians of the four directions. It protects the north.",
+    "It's shown as a tortoise with a snake wrapped around it.",
+    "玄 (xuán) means dark or black. Xuánwǔ goes with winter and with water.",
+    "The other three guardians are the Azure Dragon of the east, the White Tiger of the west and the Vermilion Bird of the south.",
+    "In old Chinese astronomy, each guardian watched over seven groups of stars in the night sky." ] },
+  { k: "nian", zh: "年兽", py: "Nián'shòu", name: "Nián, the New Year beast", facts: [
+    "Nián was a monster that came out on New Year's Eve to gobble up crops and farm animals.",
+    "It's scared of three things: the colour red, loud noises and fire.",
+    "That's why people hang red decorations and set off firecrackers at Chinese New Year.",
+    "年 (nián) also means “year.” Celebrating New Year is 过年 (guònián), “getting through the year,” or in the story, getting past the Nián!",
+    "For the rest of the year, the story says, Nián hides deep in the sea or high in the mountains." ] }
+];
+const CHEERS = [["太好了！", "Tài hǎo le!", "Awesome!"], ["很好！", "Hěn hǎo!", "Very good!"], ["加油！", "Jiā'yóu!", "Keep it up!"], ["你真棒！", "Nǐ zhēn bàng!", "You're amazing!"], ["对！", "Duì!", "Right!"]];
+
+const _artCache = {};
+function artURL(name) {
+  if (!_artCache[name]) _artCache[name] = petCanvas(PET_ART[name] || DINO_ART[name] || ITEM_ART[name]).toDataURL();
+  return _artCache[name];
+}
+const avatarHTML = (a, cls = "") => a.art ? `<img class="pix ${cls}" src="${artURL(a.art)}" alt="${esc(a.en)}">` : a.e;
 
 /* =========================================================
    rules: every activity pays XP (keeps growing) and gems (to spend)
@@ -522,7 +944,7 @@ const LS_KEY = "cbq-progress-v1";
 function blankDay() { return { date: today(), learn: [], quick: [], extraGems: 0, dailyDone: false, video: "" }; }
 function blank() {
   return { v: 2, updated: 0, xp: 0, gems: 0, bonusLessons: 0, avatar: "panda",
-    owned: { avatars: ["panda"], culture: [], videos: [VIDEOS[0].id] },
+    owned: { avatars: ["panda"], culture: [], videos: [VIDEOS[0].id], pets: [] }, petFacts: {},
     srs: {}, done: [], lp: {}, qlast: {}, vid: {}, streak: { count: 0, last: "" },
     day: blankDay(), seen: { level: 1, lessons: 1 }, ui: { lesson: 0, slow: 0.3 } };
 }
@@ -606,10 +1028,19 @@ function schedule(id, right) {
 
 /* ---------- rewards + celebrations ---------- */
 const modalQueue = [];
-function celebrate(title, msg) { modalQueue.push({ title, msg }); if ($("modal").hidden) nextModal(); }
+function celebrate(title, msg, opts = {}) { modalQueue.push(Object.assign({ title, msg }, opts)); if ($("modal").hidden) nextModal(); }
 function nextModal() {
   const m = modalQueue.shift(); if (!m) { $("modal").hidden = true; return; }
-  $("mTitle").textContent = m.title; $("mMsg").innerHTML = m.msg; $("modal").hidden = false; drawGems(); $("mOk").focus();
+  $("mTitle").textContent = m.title; $("mMsg").innerHTML = m.msg; $("mArt").innerHTML = "";
+  // one of your pets drops by to cheer
+  const owned = PETS.filter(p => S.owned.pets.includes(p.k));
+  if (m.pet && owned.length) {
+    const pet = owned[Math.floor(Math.random() * owned.length)], [zh, py, en] = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+    $("mArt").innerHTML = `<img class="pix petPop" src="${artURL(pet.k)}" alt="${esc(pet.name)}">
+      <div class="speech"><b>${pet.zh}</b> says: <span class="hanzi">${zh}</span> <span class="pinyin">${pinyinHTML(py)}</span> <span class="small">${en}</span></div>`;
+    setTimeout(() => speak(zh, { pitch: 1.2 }), 300);
+  }
+  $("modal").hidden = false; drawGems(); $("mOk").focus();
 }
 $("mOk").onclick = nextModal;
 
@@ -636,7 +1067,7 @@ function checkUps() {
 
 function renderPlayer() {
   const a = AVATARS.find(x => x.k === S.avatar) || AVATARS[0];
-  $("pAva").textContent = a.e; $("pAva").title = `${a.zh} ${a.en}`;
+  $("pAva").innerHTML = avatarHTML(a); $("pAva").title = `${a.zh} ${a.en}`;
   $("pLv").textContent = "Lv " + level();
   const into = S.xp % XP_PER_LEVEL;
   $("pXP").innerHTML = Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.floor(into / 10) ? "on" : ""}"></i>`).join("");
@@ -1038,8 +1469,8 @@ function finishLesson(L) {
     S.done.push(L.id);
     L.phrases.forEach((_, i) => { const id = itemId(L, i); if (!S.srs[id]) S.srs[id] = { b: 1, due: addDays(today(), 1) }; });
     note = pay("lessonDone", false);
-    celebrate("LESSON COMPLETE!", `<b>${esc(L.title)}</b> is done!<br>${note}<br>Its words now show up in Daily Practice.`);
-  } else celebrate("Lesson replayed!", "Nice review!");
+    celebrate("LESSON COMPLETE!", `<b>${esc(L.title)}</b> is done!<br>${note}<br>Its words now show up in Daily Practice.`, { pet: true });
+  } else celebrate("Lesson replayed!", "Nice review!", { pet: true });
   save(); renderPlayer(); renderLessonTab();
 }
 function renderReview(L, root) {
@@ -1162,7 +1593,7 @@ function renderDaily() {
       dailySeq = { title: "Daily Practice", steps: buildDaily(), i: 0, retry: true, pay: payDaily, onFinish: () => {
         dailySeq = null; S.day.dailyDone = true; bumpStreak();
         const n = pay("dailyDone");
-        celebrate("DAILY PRACTICE DONE!", `${n}<br>🔥 ${S.streak.count}-day streak`);
+        celebrate("DAILY PRACTICE DONE!", `${n}<br>🔥 ${S.streak.count}-day streak`, { pet: true });
         renderDaily();
       } };
       return runSeq(root, dailySeq);
@@ -1191,17 +1622,27 @@ function renderShop() {
   document.querySelectorAll("[data-shop]").forEach(b => b.classList.toggle("go", b.dataset.shop === shopTab));
   let h = "";
   if (shopTab === "avatars") {
-    h = `<p class="small" style="margin-top:0">The 12 animals of the Chinese zodiac, in the order they finished the Great Race. 2026 is the Year of the Horse 马. Tap a character to hear it.</p><div class="grid">` +
-      AVATARS.map(a => {
+    h = `<p class="small" style="margin-top:0">Every avatar costs ${AVATAR_COST} gems. Tap a character to hear its name in Chinese.</p>` +
+      AVATAR_GROUPS.map(([g, label]) => `<h3 class="grouph">${label}</h3><div class="grid">` + AVATARS.filter(a => a.group === g).map(a => {
         const own = S.owned.avatars.includes(a.k), cur = S.avatar === a.k;
         return `<div class="item bevel ${own ? "" : "locked"} ${cur ? "current" : ""}">
-          <div class="bigE">${a.e}</div>
+          <div class="bigE">${avatarHTML(a, "avaPix")}</div>
           <div><button class="hanzi" data-say="${a.zh}">${a.zh}</button> <span class="pinyin">${pinyinHTML(a.py)}</span></div>
           <div class="small">${a.en}</div>
           ${cur ? `<span class="small"><b>Wearing</b></span>` : own ? `<button class="btn go" data-use="${a.k}">Use</button>`
             : `<button class="btn buy" data-buy="avatars" data-key="${a.k}" data-cost="${a.cost}" ${S.gems < a.cost ? "disabled" : ""}>Unlock ${GEM} ${a.cost}</button>`}
-        </div>`;
-      }).join("") + `</div>`;
+        </div>`; }).join("") + `</div>`).join("");
+  } else if (shopTab === "pets") {
+    h = `<p class="small" style="margin-top:0">Creatures from Chinese legends. Adopt one for ${PET_COST} gems, then unlock its 5 secret facts for ${FACT_COST} gems each. Your pets cheer you on when you finish a lesson or Daily Practice!</p><div class="grid petsGrid">` +
+      PETS.map(pt => {
+        const own = S.owned.pets.includes(pt.k), nf = (S.petFacts[pt.k] || []).length;
+        return `<div class="item bevel ${own ? "" : "notmine"}">
+          <button class="petThumb" data-pet="${pt.k}" aria-label="Look at ${esc(pt.name)}"><img class="pix" src="${artURL(pt.k)}" alt=""></button>
+          <div><button class="hanzi" data-say="${pt.zh}">${pt.zh}</button> <span class="pinyin">${pinyinHTML(pt.py)}</span></div>
+          <div class="small">${esc(pt.name)}</div>
+          ${own ? `<span class="small">📜 ${nf} of 5 facts</span><button class="btn go" data-pet="${pt.k}">View</button>`
+            : `<button class="btn buy" data-adopt="${pt.k}" ${S.gems < PET_COST ? "disabled" : ""}>Adopt ${GEM} ${PET_COST}</button>`}
+        </div>`; }).join("") + `</div>`;
   } else if (shopTab === "culture") {
     h = `<div class="cards">` + CULTURE.map(c => S.owned.culture.includes(c.k)
       ? `<div class="cult bevel"><h3>${esc(c.title)}</h3><div><button class="hanzi" style="font-size:1.6rem" data-say="${c.zh}">${c.zh}</button> <span class="pinyin">${pinyinHTML(c.py)}</span></div><p>${esc(c.text)}</p></div>`
@@ -1224,9 +1665,36 @@ document.querySelectorAll("[data-shop]").forEach(b => b.onclick = () => { shopTa
 $("shopBody").addEventListener("click", e => {
   const b = e.target.closest("[data-buy]"); if (b) return buy(b.dataset.buy, b.dataset.key, +b.dataset.cost);
   const u = e.target.closest("[data-use]"); if (u) { S.avatar = u.dataset.use; save(); renderPlayer(); renderShop(); return; }
+  const ad = e.target.closest("[data-adopt]");
+  if (ad) { if (S.gems < PET_COST) return; S.gems -= PET_COST; S.owned.pets.push(ad.dataset.adopt); save(); renderPlayer(); renderShop(); return openPet(ad.dataset.adopt, true); }
+  const pv = e.target.closest("[data-pet]"); if (pv) return openPet(pv.dataset.pet);
   const w = e.target.closest("[data-watch]");
   if (w) { if (S.day.video && S.day.video !== w.dataset.watch) return; S.day.video = w.dataset.watch; save(); renderShop(); openPlayer(w.dataset.watch); }
 });
+
+/* ---------- pet viewer: big artwork + facts ---------- */
+function openPet(k, justAdopted) {
+  const pt = PETS.find(p => p.k === k), own = S.owned.pets.includes(k), got = S.petFacts[k] || [];
+  $("petBox").innerHTML = `<div class="row" style="justify-content:space-between"><span class="vtitle">${esc(pt.name)}</span><button class="btn" id="petClose">✕ Close</button></div>
+    <div class="petView">
+      <img class="pix petBig" src="${artURL(k)}" alt="${esc(pt.name)}">
+      <div class="petSide">
+        ${justAdopted ? `<p class="status">🎉 ${pt.zh} is your pet now!</p>` : ""}
+        <div><button class="hanzi" style="font-size:2.6rem" data-say="${pt.zh}">${pt.zh}</button> <span class="pinyin" style="font-size:1.4rem">${pinyinHTML(pt.py)}</span></div>
+        <h3 class="grouph">📜 Secret facts (${got.length} of 5)</h3>
+        <ol class="facts">${pt.facts.map((f, i) => got.includes(i) ? `<li>${esc(f)}</li>`
+          : `<li class="lockedFact">🔒 ${own ? `<button class="btn buy sm" data-fact="${i}" ${S.gems < FACT_COST ? "disabled" : ""}>Unlock ${GEM} ${FACT_COST}</button>` : "Adopt this pet to unlock its facts."}</li>`).join("")}</ol>
+        ${own ? "" : `<button class="btn buy big" data-adoptnow ${S.gems < PET_COST ? "disabled" : ""}>Adopt ${GEM} ${PET_COST}</button>`}
+      </div>
+    </div>`;
+  $("petModal").hidden = false; drawGems();
+  $("petBox").onclick = e => {
+    if (e.target.closest("#petClose")) { $("petModal").hidden = true; return; }
+    const f = e.target.closest("[data-fact]");
+    if (f && S.gems >= FACT_COST) { S.gems -= FACT_COST; (S.petFacts[k] = S.petFacts[k] || []).push(+f.dataset.fact); save(); renderPlayer(); renderShop(); openPet(k); }
+    if (e.target.closest("[data-adoptnow]") && S.gems >= PET_COST) { S.gems -= PET_COST; S.owned.pets.push(k); save(); renderPlayer(); renderShop(); openPet(k, true); }
+  };
+}
 
 /* ---------- YouTube: embedded player where the page allows it ---------- */
 let yt = /^https?:$/.test(location.protocol) ? "idle" : "no";   // idle | loading | ready | no
