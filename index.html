@@ -892,7 +892,7 @@ const PAY = {
   // extra practice after Daily Practice: XP always, gems until the daily cap
   xWord: { xp: 2, gems: 1 }, xTone: { xp: 2, gems: 1 }, xQuest: { xp: 10, gems: 2 }, xCoach: { xp: 3, gems: 1 }
 };
-const EXTRA_GEM_CAP = 10;
+const EXTRA_GEM_CAP = Infinity;   // extra practice keeps paying gems
 const BOX_DAYS = [0, 1, 2, 4, 7, 14, 30];
 const REVIEW_MAX = 20;
 
@@ -1576,9 +1576,8 @@ function renderDaily() {
       <p class="small">Finish to keep your streak: +${PAY.dailyDone.xp} XP and +${PAY.dailyDone.gems} ${GEM} bonus.</p>
       <button class="btn go big" data-d="start">▶ Start Daily Practice</button></div>`;
   } else {
-    const left = EXTRA_GEM_CAP - S.day.extraGems;
     root.innerHTML = `<div class="stage panel bevel"><h2>✅ Daily Practice done!</h2>${info}
-      <p>Want more? Extra practice still earns XP${left > 0 ? `, plus up to ${left} more ${GEM} today` : ". Gems for extras are used up today"}.</p>
+      <p>Want more? Extra practice still earns XP and ${GEM} gems.</p>
       <div class="row center"><button class="btn go big" data-d="xword">💎 10 words</button><button class="btn go big" data-d="xtone">🎵 10 tones</button></div></div>
       <div class="panel bevel"><h2>💬 Talk Quests</h2><div class="quests">${questPool().map(q => { const L = LESSONS.find(l => l.id === q.lid), Q = L.quests[q.qi];
         return `<div class="quest bevel"><b>${esc(Q.name)}</b><span class="small">Lesson ${LESSONS.indexOf(L) + 1} · ${esc(Q.note)}</span>
