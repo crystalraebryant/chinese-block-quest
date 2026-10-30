@@ -1676,6 +1676,7 @@ $("shopBody").addEventListener("click", e => {
 /* ---------- pet viewer: big artwork + facts ---------- */
 function openPet(k, justAdopted) {
   const pt = PETS.find(p => p.k === k), own = S.owned.pets.includes(k), got = S.petFacts[k] || [];
+  const nextFact = pt.facts.findIndex((_, i) => !got.includes(i));   // facts unlock in order
   $("petBox").innerHTML = `<div class="row" style="justify-content:space-between"><span class="vtitle">${esc(pt.name)}</span><button class="btn" id="petClose">✕ Close</button></div>
     <div class="petView">
       <img class="pix petBig" src="${artURL(k)}" alt="${esc(pt.name)}">
@@ -1684,7 +1685,9 @@ function openPet(k, justAdopted) {
         <div><button class="hanzi" style="font-size:2.6rem" data-say="${pt.zh}">${pt.zh}</button> <span class="pinyin" style="font-size:1.4rem">${pinyinHTML(pt.py)}</span></div>
         <h3 class="grouph">📜 Secret facts (${got.length} of 5)</h3>
         <ol class="facts">${pt.facts.map((f, i) => got.includes(i) ? `<li>${esc(f)}</li>`
-          : `<li class="lockedFact">🔒 ${own ? `<button class="btn buy sm" data-fact="${i}" ${S.gems < FACT_COST ? "disabled" : ""}>Unlock ${GEM} ${FACT_COST}</button>` : "Adopt this pet to unlock its facts."}</li>`).join("")}</ol>
+          : `<li class="lockedFact">🔒 ${!own ? "Adopt this pet to unlock its facts." : i === nextFact
+              ? `<button class="btn buy sm" data-fact="${i}" ${S.gems < FACT_COST ? "disabled" : ""}>Unlock ${GEM} ${FACT_COST}</button>`
+              : `Unlock fact ${nextFact + 1} first.`}</li>`).join("")}</ol>
         ${own ? "" : `<button class="btn buy big" data-adoptnow ${S.gems < PET_COST ? "disabled" : ""}>Adopt ${GEM} ${PET_COST}</button>`}
       </div>
     </div>`;
@@ -1692,7 +1695,7 @@ function openPet(k, justAdopted) {
   $("petBox").onclick = e => {
     if (e.target.closest("#petClose")) { $("petModal").hidden = true; return; }
     const f = e.target.closest("[data-fact]");
-    if (f && S.gems >= FACT_COST) { S.gems -= FACT_COST; (S.petFacts[k] = S.petFacts[k] || []).push(+f.dataset.fact); save(); renderPlayer(); renderShop(); openPet(k); }
+    if (f && +f.dataset.fact === nextFact && S.gems >= FACT_COST) { S.gems -= FACT_COST; (S.petFacts[k] = S.petFacts[k] || []).push(+f.dataset.fact); save(); renderPlayer(); renderShop(); openPet(k); }
     if (e.target.closest("[data-adoptnow]") && S.gems >= PET_COST) { S.gems -= PET_COST; S.owned.pets.push(k); save(); renderPlayer(); renderShop(); openPet(k, true); }
   };
 }
